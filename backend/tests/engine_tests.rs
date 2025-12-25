@@ -1,7 +1,13 @@
-use neocalc_backend::engine::{evaluate, types::Number};
+use neocalc_backend::engine::{evaluate as evaluate_core, types::Number};
 use num_bigint::BigInt;
 use num_rational::BigRational;
 use num::FromPrimitive;
+use std::collections::HashMap;
+
+fn evaluate(expr: &str) -> Result<Number, String> {
+    let mut context = HashMap::new();
+    evaluate_core(expr, &mut context)
+}
 
 #[test]
 fn test_sanity_arithmetic() {

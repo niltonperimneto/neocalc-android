@@ -1,14 +1,10 @@
-use pyo3::prelude::*;
-use pyo3::exceptions::PyRuntimeError;
-use pyo3_async_runtimes::tokio::future_into_py;
 use std::sync::{Arc, Mutex};
 
 use crate::engine;
 use crate::utils::{self, lock_mutex};
 
-/// The interface between Python (Dynamic Bliss) and Rust (Static Pain).
-#[pyclass]
-#[derive(Default)]
+/// The interface between the App and the Engine.
+#[derive(Default, Clone)]
 pub struct Calculator {
     /* Stores the history of calculations as a list of strings */
     history: Arc<Mutex<Vec<String>>>,
@@ -18,10 +14,8 @@ pub struct Calculator {
     variables: Arc<Mutex<engine::types::Context>>,
 }
 
-#[pymethods]
 impl Calculator {
-    #[new]
-    fn new() -> Self {
+    pub fn new() -> Self {
         /* Initialize a new Calculator with empty history and "0" as input */
         Calculator {
             history: Arc::new(Mutex::new(Vec::new())),
@@ -30,7 +24,7 @@ impl Calculator {
         }
     }
 
-    fn input(&self, text: String) -> PyResult<String> {
+    pub fn input(&self, text: String) -> Result<String, String> {
         /* Lock the buffer to safely modify it across threads */
         let mut buffer = lock_mutex(&self.input_buffer)?;
 
@@ -51,7 +45,7 @@ impl Calculator {
         Ok(buffer.clone())
     }
 
-    fn backspace(&self) -> PyResult<String> {
+    pub fn backspace(&self) -> Result<String, String> {
         let mut buffer = lock_mutex(&self.input_buffer)?;
         /* Remove the last character if buffer is not empty */
         if !buffer.is_empty() {
@@ -64,18 +58,18 @@ impl Calculator {
         Ok(buffer.clone())
     }
 
-    fn clear(&self) -> PyResult<String> {
+    pub fn clear(&self) -> Result<String, String> {
         /* Reset the entire buffer to "0" */
         let mut buffer = lock_mutex(&self.input_buffer)?;
         *buffer = "0".to_string();
         Ok(buffer.clone())
     }
 
-    fn get_buffer(&self) -> PyResult<String> {
+    pub fn get_buffer(&self) -> Result<String, String> {
         Ok(lock_mutex(&self.input_buffer)?.clone())
     }
 
-    fn evaluate(&self, _expression: Option<String>) -> PyResult<String> {
+    pub fn evaluate(&self, _expression: Option<String>) -> Result<String, String> {
         /* Determine whether to evaluate provided expression or current buffer */
         let expr_to_eval = if let Some(e) = _expression {
             e
@@ -103,13 +97,13 @@ impl Calculator {
         Ok(output)
     }
 
-    fn set_expression(&self, expression: String) -> PyResult<()> {
+    pub fn set_expression(&self, expression: String) -> Result<(), String> {
         let mut buffer = lock_mutex(&self.input_buffer)?;
         *buffer = expression;
         Ok(())
     }
 
-    fn evaluate_async<'py>(&self, py: Python<'py>, expression: Option<String>) -> PyResult<Bound<'py, PyAny>> {
+    pub async fn evaluate_async(&self, expression: Option<String>) -> Result<String, String> {
         let buffer_val = if let Some(e) = expression {
             e
         } else {
@@ -126,46 +120,43 @@ impl Calculator {
         let expr_for_task = buffer_val.clone();
 
         /* Run evaluation in a separate blocking thread to keep UI responsive */
-        let _guard = crate::utils::RUNTIME.enter();
-        future_into_py(py, async move {
-            let output = crate::utils::RUNTIME.spawn_blocking(move || {
-                let mut context = match variables_arc.lock() {
-                     Ok(g) => g,
-                     Err(_) => return "Error: Lock poisoned".to_string(),
-                 };
-                 
-                let res = engine::evaluate(&expr_for_task, &mut context);
-                match res {
-                    Ok(n) => utils::format_number(n),
-                    Err(_) => "Error".to_string(),
-                }
-            }).await.map_err(|e| PyRuntimeError::new_err(format!("Join error: {}", e)))?;
-
-            /* Update state if successful */
-            if output != "Error" && !buffer_val.trim().is_empty() {
-
-                if let Ok(mut h) = history.lock() {
-                     h.push(format!("{} = {}", buffer_val, output));
-                }
-                if let Ok(mut b) = buffer_arc.lock() {
-                    *b = output.clone();
-                }
+        let output = crate::utils::RUNTIME.spawn_blocking(move || {
+            let mut context = match variables_arc.lock() {
+                 Ok(g) => g,
+                 Err(_) => return "Error: Lock poisoned".to_string(),
+             };
+             
+            let res = engine::evaluate(&expr_for_task, &mut context);
+            match res {
+                Ok(n) => utils::format_number(n),
+                Err(_) => "Error".to_string(),
             }
-            Ok(output)
-        })
+        }).await.map_err(|e| format!("Join error: {}", e))?;
+
+        /* Update state if successful */
+        if output != "Error" && !buffer_val.trim().is_empty() {
+
+            if let Ok(mut h) = history.lock() {
+                 h.push(format!("{} = {}", buffer_val, output));
+            }
+            if let Ok(mut b) = buffer_arc.lock() {
+                *b = output.clone();
+            }
+        }
+        Ok(output)
     }
 
-    fn get_history(&self) -> PyResult<Vec<String>> {
+    pub fn get_history(&self) -> Result<Vec<String>, String> {
         Ok(lock_mutex(&self.history)?.clone())
     }
 
-    fn clear_history(&self) -> PyResult<()> {
+    pub fn clear_history(&self) -> Result<(), String> {
         let mut h = lock_mutex(&self.history)?;
         h.clear();
         Ok(())
     }
 
-    fn convert_to_hex(&self) -> PyResult<String> {
+    pub fn convert_to_hex(&self) -> Result<String, String> {
         let buffer = lock_mutex(&self.input_buffer)?;
         /* Try to parse the current buffer as an integer */
         /* Note: This is simple parsing; for robust behavior we might want to evaluate first if it's an expression */
@@ -181,7 +172,7 @@ impl Calculator {
         Ok(buffer.clone())
     }
 
-    fn convert_to_bin(&self) -> PyResult<String> {
+    pub fn convert_to_bin(&self) -> Result<String, String> {
         let buffer = lock_mutex(&self.input_buffer)?;
         if let Ok(val) = buffer.parse::<f64>() {
             let int_val = val as i64;
@@ -190,8 +181,8 @@ impl Calculator {
         Ok(buffer.clone())
     }
 
-    fn preview(&self, expression: String) -> PyResult<String> {
-        let mut context = lock_mutex(&self.variables)?;
+    pub fn preview(&self, expression: String) -> Result<String, String> {
+        let context = lock_mutex(&self.variables)?;
         // Clone context to ensure preview doesn't modify actual state (if we had mutable ops)
         // Currently evaluate accepts &mut Context. Assignments modify it.
         // We WANT preview to NOT modify variables (e.g. previewing "x=5" shouldn't set x).
@@ -205,7 +196,7 @@ impl Calculator {
         }
     }
 
-    fn get_variables(&self) -> PyResult<std::collections::HashMap<String, String>> {
+    pub fn get_variables(&self) -> Result<std::collections::HashMap<String, String>, String> {
         let context = lock_mutex(&self.variables)?;
         let mut result = std::collections::HashMap::new();
         for (k, v) in context.iter() {

@@ -5,11 +5,9 @@ edition = "2024"
 
 [lib]
 name = "neocalc_backend"
-crate-type = ["cdylib", "rlib"]
+crate-type = ["rlib"]
 
 [dependencies]
-pyo3 = { version = "0.27.2" }
-pyo3-async-runtimes = { version = "0.27", features = ["tokio-runtime"] }
 tokio = { version = "1.48", features = ["full"] }
 num = "0.4"
 num-bigint = "0.4"

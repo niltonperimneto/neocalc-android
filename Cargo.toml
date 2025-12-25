@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    "backend",
-    "launcher"
+    "backend"
 ]
 resolver = "2"
