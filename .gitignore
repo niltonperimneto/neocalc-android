@@ -1,22 +1,36 @@
+# Rust
 target/
 **/*.rs.bk
+Cargo.lock
+
+# Android / Gradle
+.gradle/
+build/
+local.properties
+.idea/
+.cxx/
+.externalNativeBuild/
+captures/
+*.iml
+*.apk
+*.ap_
+*.dex
+
+# Python (Cleanup remains)
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
 .venv
 venv
 ENV
 env
-build/
-dist/
-*.spec
-*.manifest
-NeoCalc
-NeoCalc.zip
-neocalc_runner
-neocalc_runner.exe
-main.bin
-.vscode/
-.idea/
+
+# System
 .DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# Layout Inspector
+captures/

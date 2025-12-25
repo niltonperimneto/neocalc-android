@@ -1,10 +1,23 @@
 use std::sync::{Arc, Mutex};
+use thiserror::Error;
 
 use crate::engine;
 use crate::utils::{self, lock_mutex};
 
+#[derive(Debug, Error, uniffi::Error)]
+pub enum CalculatorError {
+    #[error("{0}")]
+    Generic(String),
+}
+
+impl From<String> for CalculatorError {
+    fn from(s: String) -> Self {
+        CalculatorError::Generic(s)
+    }
+}
+
 /// The interface between the App and the Engine.
-#[derive(Default, Clone)]
+#[derive(uniffi::Object)]
 pub struct Calculator {
     /* Stores the history of calculations as a list of strings */
     history: Arc<Mutex<Vec<String>>>,
@@ -14,7 +27,9 @@ pub struct Calculator {
     variables: Arc<Mutex<engine::types::Context>>,
 }
 
+#[uniffi::export]
 impl Calculator {
+    #[uniffi::constructor]
     pub fn new() -> Self {
         /* Initialize a new Calculator with empty history and "0" as input */
         Calculator {
@@ -24,9 +39,9 @@ impl Calculator {
         }
     }
 
-    pub fn input(&self, text: String) -> Result<String, String> {
+    pub fn input(&self, text: String) -> Result<String, CalculatorError> {
         /* Lock the buffer to safely modify it across threads */
-        let mut buffer = lock_mutex(&self.input_buffer)?;
+        let mut buffer = lock_mutex(&self.input_buffer).map_err(CalculatorError::from)?;
 
         /* If buffer is "0", replace it unless user enters decimal or paren */
         if *buffer == "0" && text != "." && text != ")" {
@@ -45,8 +60,8 @@ impl Calculator {
         Ok(buffer.clone())
     }
 
-    pub fn backspace(&self) -> Result<String, String> {
-        let mut buffer = lock_mutex(&self.input_buffer)?;
+    pub fn backspace(&self) -> Result<String, CalculatorError> {
+        let mut buffer = lock_mutex(&self.input_buffer).map_err(CalculatorError::from)?;
         /* Remove the last character if buffer is not empty */
         if !buffer.is_empty() {
             buffer.pop();
@@ -58,27 +73,27 @@ impl Calculator {
         Ok(buffer.clone())
     }
 
-    pub fn clear(&self) -> Result<String, String> {
+    pub fn clear(&self) -> Result<String, CalculatorError> {
         /* Reset the entire buffer to "0" */
-        let mut buffer = lock_mutex(&self.input_buffer)?;
+        let mut buffer = lock_mutex(&self.input_buffer).map_err(CalculatorError::from)?;
         *buffer = "0".to_string();
         Ok(buffer.clone())
     }
 
-    pub fn get_buffer(&self) -> Result<String, String> {
-        Ok(lock_mutex(&self.input_buffer)?.clone())
+    pub fn get_buffer(&self) -> Result<String, CalculatorError> {
+        Ok(lock_mutex(&self.input_buffer).map_err(CalculatorError::from)?.clone())
     }
 
-    pub fn evaluate(&self, _expression: Option<String>) -> Result<String, String> {
+    pub fn evaluate(&self, _expression: Option<String>) -> Result<String, CalculatorError> {
         /* Determine whether to evaluate provided expression or current buffer */
         let expr_to_eval = if let Some(e) = _expression {
             e
         } else {
-            lock_mutex(&self.input_buffer)?.clone()
+            lock_mutex(&self.input_buffer).map_err(CalculatorError::from)?.clone()
         };
 
         /* Call the core engine to calculate result */
-        let mut context = lock_mutex(&self.variables)?;
+        let mut context = lock_mutex(&self.variables).map_err(CalculatorError::from)?;
         let res = engine::evaluate(&expr_to_eval, &mut context);
         let output = match res {
             Ok(n) => utils::format_number(n),
@@ -97,19 +112,19 @@ impl Calculator {
         Ok(output)
     }
 
-    pub fn set_expression(&self, expression: String) -> Result<(), String> {
-        let mut buffer = lock_mutex(&self.input_buffer)?;
+    pub fn set_expression(&self, expression: String) -> Result<(), CalculatorError> {
+        let mut buffer = lock_mutex(&self.input_buffer).map_err(CalculatorError::from)?;
         *buffer = expression;
         Ok(())
     }
 
-    pub async fn evaluate_async(&self, expression: Option<String>) -> Result<String, String> {
+    pub async fn evaluate_async(&self, expression: Option<String>) -> Result<String, CalculatorError> {
         let buffer_val = if let Some(e) = expression {
             e
         } else {
              match lock_mutex(&self.input_buffer) {
                  Ok(g) => g.clone(),
-                 Err(e) => return Err(e),
+                 Err(e) => return Err(CalculatorError::from(e)),
              }
         };
 
@@ -131,7 +146,7 @@ impl Calculator {
                 Ok(n) => utils::format_number(n),
                 Err(_) => "Error".to_string(),
             }
-        }).await.map_err(|e| format!("Join error: {}", e))?;
+        }).await.map_err(|e| CalculatorError::from(format!("Join error: {}", e)))?;
 
         /* Update state if successful */
         if output != "Error" && !buffer_val.trim().is_empty() {
@@ -146,21 +161,19 @@ impl Calculator {
         Ok(output)
     }
 
-    pub fn get_history(&self) -> Result<Vec<String>, String> {
-        Ok(lock_mutex(&self.history)?.clone())
+    pub fn get_history(&self) -> Result<Vec<String>, CalculatorError> {
+        Ok(lock_mutex(&self.history).map_err(CalculatorError::from)?.clone())
     }
 
-    pub fn clear_history(&self) -> Result<(), String> {
-        let mut h = lock_mutex(&self.history)?;
+    pub fn clear_history(&self) -> Result<(), CalculatorError> {
+        let mut h = lock_mutex(&self.history).map_err(CalculatorError::from)?;
         h.clear();
         Ok(())
     }
 
-    pub fn convert_to_hex(&self) -> Result<String, String> {
-        let buffer = lock_mutex(&self.input_buffer)?;
+    pub fn convert_to_hex(&self) -> Result<String, CalculatorError> {
+        let buffer = lock_mutex(&self.input_buffer).map_err(CalculatorError::from)?;
         /* Try to parse the current buffer as an integer */
-        /* Note: This is simple parsing; for robust behavior we might want to evaluate first if it's an expression */
-        /* But for now let's assume the user hits 'Hex' after '=', so buffer is a number */
         
         /* If it's a raw number */
         if let Ok(val) = buffer.parse::<f64>() {
@@ -172,8 +185,8 @@ impl Calculator {
         Ok(buffer.clone())
     }
 
-    pub fn convert_to_bin(&self) -> Result<String, String> {
-        let buffer = lock_mutex(&self.input_buffer)?;
+    pub fn convert_to_bin(&self) -> Result<String, CalculatorError> {
+        let buffer = lock_mutex(&self.input_buffer).map_err(CalculatorError::from)?;
         if let Ok(val) = buffer.parse::<f64>() {
             let int_val = val as i64;
             return Ok(format!("0b{:b}", int_val));
@@ -181,12 +194,9 @@ impl Calculator {
         Ok(buffer.clone())
     }
 
-    pub fn preview(&self, expression: String) -> Result<String, String> {
-        let context = lock_mutex(&self.variables)?;
-        // Clone context to ensure preview doesn't modify actual state (if we had mutable ops)
-        // Currently evaluate accepts &mut Context. Assignments modify it.
-        // We WANT preview to NOT modify variables (e.g. previewing "x=5" shouldn't set x).
-        // So we should clone the context.
+    pub fn preview(&self, expression: String) -> Result<String, CalculatorError> {
+        let context = lock_mutex(&self.variables).map_err(CalculatorError::from)?;
+        // Clone context to ensure preview doesn't modify actual state
         let mut context_clone = context.clone();
         
         let res = engine::evaluate(&expression, &mut context_clone);
@@ -196,8 +206,8 @@ impl Calculator {
         }
     }
 
-    pub fn get_variables(&self) -> Result<std::collections::HashMap<String, String>, String> {
-        let context = lock_mutex(&self.variables)?;
+    pub fn get_variables(&self) -> Result<std::collections::HashMap<String, String>, CalculatorError> {
+        let context = lock_mutex(&self.variables).map_err(CalculatorError::from)?;
         let mut result = std::collections::HashMap::new();
         for (k, v) in context.iter() {
             result.insert(k.clone(), utils::format_number(v.clone()));
