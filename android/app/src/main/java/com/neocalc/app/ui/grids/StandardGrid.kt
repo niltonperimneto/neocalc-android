@@ -1,0 +1,49 @@
+package com.neocalc.app.ui.grids
+
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Backspace
+import androidx.compose.material.icons.filled.Calculate
+
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import com.neocalc.app.core.CalculatorViewModel
+import com.neocalc.app.ui.components.GridButton
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import com.neocalc.app.ui.components.ButtonType
+
+@Composable
+fun StandardGrid(
+    viewModel: CalculatorViewModel,
+    modifier: Modifier = Modifier
+) {
+    // Scrollable container for density and extra rows
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .verticalScroll(androidx.compose.foundation.rememberScrollState())
+    ) {
+        // Missing Standard Functions Row
+        Row(Modifier.fillMaxWidth()) {
+            GridButton("%", { viewModel.input("%") }, ButtonType.FUNCTION, Modifier.weight(1f))
+            GridButton("¹/x", { viewModel.input("^(-1)") }, ButtonType.FUNCTION, Modifier.weight(1f))
+            GridButton("x²", { viewModel.input("^2") }, ButtonType.FUNCTION, Modifier.weight(1f))
+            GridButton("√", { viewModel.input("sqrt(") }, ButtonType.FUNCTION, Modifier.weight(1f))
+        }
+
+        Numpad(
+            viewModel = viewModel,
+            // Slot 1 (Next to 3): Power ^
+            slot1 = {
+                GridButton("^", { viewModel.input("^") }, ButtonType.OPERATOR, Modifier.weight(1f))
+            },
+            // Slot 2 (Next to Dot): Equals =
+            slot2 = {
+                GridButton("=", { viewModel.evaluate() }, ButtonType.EQUALS, Modifier.weight(1f))
+            }
+        )
+    }
+}

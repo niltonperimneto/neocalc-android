@@ -10,33 +10,82 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.neocalc.app.ui.style.ButtonType
-import com.neocalc.app.ui.style.StyleManager
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.aspectRatio
+// Removed StyleManager import
 
+enum class ButtonType {
+    NUMBER, OPERATOR, FUNCTION, EQUALS, DESTRUCTIVE, NONE
+}
 @Composable
 fun GridButton(
-    text: String,
+    text: String? = null,
     onClick: () -> Unit,
     type: ButtonType = ButtonType.NUMBER,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    imageVector: ImageVector? = null,
+    contentDescription: String? = null,
+    useAspectRatio: Boolean = true
 ) {
-    val style = StyleManager.getStyle(type)
+    // Map ButtonType to M3 Color Roles
+    val containerColor = when (type) {
+        ButtonType.NUMBER -> MaterialTheme.colorScheme.secondaryContainer
+        ButtonType.OPERATOR -> MaterialTheme.colorScheme.tertiaryContainer
+        ButtonType.FUNCTION -> MaterialTheme.colorScheme.surfaceVariant
+        ButtonType.EQUALS -> MaterialTheme.colorScheme.primary
+        ButtonType.DESTRUCTIVE -> MaterialTheme.colorScheme.errorContainer
+        else -> MaterialTheme.colorScheme.secondaryContainer
+    }
+
+    val contentColor = when (type) {
+        ButtonType.NUMBER -> MaterialTheme.colorScheme.onSecondaryContainer
+        ButtonType.OPERATOR -> MaterialTheme.colorScheme.onTertiaryContainer
+        ButtonType.FUNCTION -> MaterialTheme.colorScheme.onSurfaceVariant
+        ButtonType.EQUALS -> MaterialTheme.colorScheme.onPrimary
+        ButtonType.DESTRUCTIVE -> MaterialTheme.colorScheme.onErrorContainer
+        else -> MaterialTheme.colorScheme.onSecondaryContainer
+    }
 
     Button(
         onClick = onClick,
         colors = ButtonDefaults.buttonColors(
-            containerColor = style.backgroundColor,
-            contentColor = style.textColor
+            containerColor = containerColor,
+            contentColor = contentColor
         ),
-        shape = RoundedCornerShape(style.cornerRadius),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = style.elevation),
+        // Use CircleShape for a modern, pill/circle look. 
+        // If buttons are not square, this will make them pill-shaped automatically.
+        // User requested square with slightly rounded corners and compact density
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(15), 
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
         modifier = modifier
-            .padding(4.dp)
+            .padding(2.dp) // Compact padding
             .fillMaxSize()
+            .then(if (useAspectRatio) Modifier.aspectRatio(1.2f) else Modifier) 
     ) {
-        Text(
-            text = text,
-            fontSize = 24.sp
-        )
+        if (imageVector != null) {
+            Icon(
+                imageVector = imageVector,
+                contentDescription = contentDescription ?: text,
+                modifier = Modifier.fillMaxSize(0.5f)
+            )
+        } else {
+            // Text Scaling Logic
+            val displayText = text ?: ""
+            val fontSize = when {
+                displayText.length > 6 -> 10.sp
+                displayText.length > 4 -> 12.sp
+                displayText.length > 2 -> 16.sp
+                else -> 20.sp
+            }
+            
+            Text(
+                text = displayText,
+                style = MaterialTheme.typography.titleLarge.copy(fontSize = fontSize),
+                maxLines = 1,
+                softWrap = false
+            )
+        }
     }
 }
