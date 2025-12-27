@@ -1,7 +1,6 @@
 # Rust
 target/
 **/*.rs.bk
-Cargo.lock
 
 # Android / Gradle
 .gradle/
@@ -15,8 +14,17 @@ captures/
 *.apk
 *.ap_
 *.dex
+.navigation/
 
-# Python (Cleanup remains)
+# Generated Native Libs
+android/app/src/main/jniLibs/
+**/jniLibs/
+**/*.so
+
+# Generated Bindings
+**/uniffi/
+
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -31,6 +39,3 @@ Thumbs.db
 
 # VS Code
 .vscode/
-
-# Layout Inspector
-captures/

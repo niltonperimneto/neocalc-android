@@ -3,7 +3,7 @@ package com.neocalc.app.ui.grids
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.weight
+
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.neocalc.app.core.CalculatorViewModel

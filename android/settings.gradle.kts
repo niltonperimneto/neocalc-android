@@ -15,3 +15,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "NeoCalc"
 include(":app")
+// Backend is managed via the rust-android gradle plugin within :app

@@ -1,17 +1,20 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("org.mozilla.rust-android-gradle.rust-android")
+    id("org.jetbrains.kotlin.plugin.compose")
+
 }
 
 android {
     namespace = "com.neocalc.app"
-    compileSdk = 34
+    compileSdk = 35
+    buildToolsVersion = "35.0.0"
+    ndkVersion = "29.0.14206865"
 
     defaultConfig {
         applicationId = "com.neocalc.app"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -28,17 +31,12 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
+
     buildFeatures {
         compose = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.1"
     }
     packaging {
         resources {
@@ -47,36 +45,76 @@ android {
     }
 }
 
+// Cargo build moved to manual task due to plugin incompatibility
+/*
 cargo {
     module = "../../backend"       // Path to Rust crate
     libname = "neocalc_backend"    // Library name
     targets = listOf("arm", "arm64", "x86", "x86_64")
     apiLevel = 26
 }
+*/
 
 // Helper task to generate kotlin bindings via uniffi-bindgen
-// In a real setup, you might want more robust task dependencies.
-// This assumes 'uniffi-bindgen' is installed or run via cargo run.
+// Define cargo path, falling back to standard install location if not in PATH
+val cargoPath = System.getenv("CARGO_PATH") ?: "${System.getProperty("user.home")}/.cargo/bin/cargo"
 
-tasks.register("generateBindings") {
-    doLast {
-        exec {
-            workingDir = file("../../backend")
-            commandLine("cargo", "run", "--bin", "uniffi-bindgen", "generate", "--library", "../target/debug/libneocalc_backend.so", "--language", "kotlin", "--out-dir", "${project.projectDir}/src/main/java/com/neocalc/app/core")
-        }
-    }
+// Task to build the Rust library
+tasks.register<Exec>("buildRustLib") {
+    workingDir = file("../../backend")
+    commandLine(cargoPath, "build", "--lib")
 }
 
-// Make preBuild depend on generating bindings if you want auto-generation
-// preBuild.dependsOn("generateBindings")
+// Task to generate Kotlin bindings, depends on buildRustLib
+tasks.register<Exec>("generateBindings") {
+    dependsOn("buildRustLib")
+    workingDir = file("../../backend")
+    commandLine(
+        cargoPath, "run", "--bin", "uniffi-bindgen", "generate",
+        "--library", "../target/debug/libneocalc_backend.so",
+        "--language", "kotlin",
+        "--out-dir", "${project.projectDir}/src/main/java/com/neocalc/app/core"
+    )
+}
+
+// Task to build native libs using cargo-ndk
+tasks.register<Exec>("buildNativeLibs") {
+    workingDir = file("../../backend")
+    // Use cargo-ndk to build for targets and output to jniLibs
+    // Ensure cargo-ndk is installed: cargo install cargo-ndk
+    commandLine(
+        cargoPath, "ndk",
+        "-t", "armeabi-v7a",
+        "-t", "arm64-v8a",
+        "-t", "x86",
+        "-t", "x86_64",
+        "-o", "../android/app/src/main/jniLibs",
+        "build", "--release"
+    )
+    environment("PATH", System.getenv("PATH") + ":${System.getProperty("user.home")}/.cargo/bin")
+}
+
+// Ensure bindings are generated before preBuild
+tasks.named("preBuild") {
+    dependsOn("generateBindings")
+    dependsOn("buildNativeLibs")
+}
 
 dependencies {
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
-    implementation("androidx.activity:activity-compose:1.8.2")
-    implementation(platform("androidx.compose:compose-bom:2023.08.00"))
+    implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
+    implementation("androidx.activity:activity-compose:1.9.3")
+    implementation(platform("androidx.compose:compose-bom:2024.11.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    implementation("net.java.dev.jna:jna:5.13.0@aar")
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
 }
