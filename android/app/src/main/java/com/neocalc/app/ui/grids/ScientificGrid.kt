@@ -3,38 +3,25 @@ package com.neocalc.app.ui.grids
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Backspace
-
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.neocalc.app.core.CalculatorViewModel
-import com.neocalc.app.ui.components.GridButton
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import com.neocalc.app.ui.components.ButtonType
+import com.neocalc.app.ui.components.GridButton
 
 @Composable
 fun ScientificGrid(
     viewModel: CalculatorViewModel,
     modifier: Modifier = Modifier
 ) {
-    // Scrollable column to fit all scientific keys on smaller screens
+    // Scrollable layout to accommodate all keys on smaller screens
     Column(
         modifier = modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
     ) {
-        val rowModifier = Modifier.weight(1f, fill = false) 
-        // Note: We use fill=false for weight in a scrollable column or explicit height
-        // But for a Scrollable Column, 'weight' doesn't work well directly on children if parent is unbound.
-        // We actually want a Fixed height approach or just default wrap content. 
-        // For simpler "Grid" feel in a fixed space, we usually use weight. 
-        // But since this might be TALLER than screen, 'verticalScroll' is right.
-        // We will just let rows wrap individually.
-
         // Row 1: Basic Math & Grouping
         Row(Modifier.fillMaxWidth()) {
             GridButton("(", { viewModel.input("(") }, ButtonType.FUNCTION, Modifier.weight(1f))

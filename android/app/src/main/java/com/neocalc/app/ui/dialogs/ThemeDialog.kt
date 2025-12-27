@@ -3,6 +3,11 @@ package com.neocalc.app.ui.dialogs
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.Icon
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -60,8 +65,34 @@ fun ThemeDialog(onDismiss: () -> Unit) {
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Close")
+            androidx.compose.foundation.layout.Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                 // Import Button
+                 val launcher = androidx.activity.compose.rememberLauncherForActivityResult(
+                     contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
+                 ) { uri: android.net.Uri? ->
+                     uri?.let {
+                         ThemeManager.importTheme(context, it)
+                     }
+                 }
+                 
+                 androidx.compose.material3.TextButton(onClick = { 
+                     launcher.launch("*/*") // Allow picking css or any file (mime types can be tricky)
+                 }) {
+                     androidx.compose.material3.Icon(
+                         imageVector = androidx.compose.material.icons.Icons.Default.Add,
+                         contentDescription = null,
+                         modifier = Modifier.padding(end = 4.dp).size(16.dp)
+                     )
+                     Text("Import")
+                 }
+
+                 androidx.compose.foundation.layout.Spacer(Modifier.weight(1f))
+
+                 TextButton(onClick = onDismiss) {
+                     Text("Close")
+                 }
             }
         }
     )

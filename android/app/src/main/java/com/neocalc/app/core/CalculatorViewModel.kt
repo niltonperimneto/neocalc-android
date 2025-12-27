@@ -10,7 +10,7 @@ import uniffi.neocalc_backend.Calculator
 
 class CalculatorViewModel : ViewModel() {
 
-    // List of active sessions
+
     data class Session(
         val id: String,
         var name: String,
@@ -33,11 +33,11 @@ class CalculatorViewModel : ViewModel() {
     // UI State for Dialogs
     val showThemeDialog = MutableStateFlow(false)
 
-    // Expose current mode dynamically based on session
+    // Expose current mode dynamically
     val mode: StateFlow<CalculatorMode> get() = _currentSession.value?.mode?.asStateFlow() ?: MutableStateFlow(CalculatorMode.STANDARD).asStateFlow()
 
     init {
-        // Create initial session
+
         addNewSession()
     }
 
@@ -86,7 +86,7 @@ class CalculatorViewModel : ViewModel() {
                      _displayValue.value = session.calculator.input(text)
                 }
             } catch (e: Exception) {
-                // Log error or handle
+                android.util.Log.e("CalculatorViewModel", "Error executing input", e)
             }
         }
     }
@@ -97,7 +97,9 @@ class CalculatorViewModel : ViewModel() {
                  _currentSession.value?.let { session ->
                     _displayValue.value = session.calculator.backspace()
                  }
-            } catch (e: Exception) {}
+            } catch (e: Exception) {
+                android.util.Log.e("CalculatorViewModel", "Error executing backspace", e)
+            }
         }
     }
 
@@ -107,7 +109,9 @@ class CalculatorViewModel : ViewModel() {
                  _currentSession.value?.let { session ->
                      _displayValue.value = session.calculator.clear()
                  }
-            } catch (e: Exception) {}
+            } catch (e: Exception) {
+                android.util.Log.e("CalculatorViewModel", "Error executing clear", e)
+            }
         }
     }
 
@@ -120,6 +124,7 @@ class CalculatorViewModel : ViewModel() {
                     updateHistory()
                  }
             } catch (e: Exception) {
+               android.util.Log.e("CalculatorViewModel", "Error executing evaluate", e)
                _displayValue.value = "Error"
             }
         }
@@ -131,7 +136,9 @@ class CalculatorViewModel : ViewModel() {
                  _currentSession.value?.let { session ->
                     _displayValue.value = session.calculator.convertToHex()
                  }
-            } catch (e: Exception) {}
+            } catch (e: Exception) {
+                android.util.Log.e("CalculatorViewModel", "Error executing hex conversion", e)
+            }
         }
     }
 
@@ -141,7 +148,9 @@ class CalculatorViewModel : ViewModel() {
                  _currentSession.value?.let { session ->
                     _displayValue.value = session.calculator.convertToBin()
                  }
-            } catch (e: Exception) {}
+            } catch (e: Exception) {
+                android.util.Log.e("CalculatorViewModel", "Error executing bin conversion", e)
+            }
         }
     }
 
@@ -151,13 +160,15 @@ class CalculatorViewModel : ViewModel() {
                  _currentSession.value?.let { session ->
                     _history.value = session.calculator.getHistory()
                  }
-            } catch (e: Exception) {}
+            } catch (e: Exception) {
+                android.util.Log.e("CalculatorViewModel", "Error updating history", e)
+            }
         }
     }
     
     override fun onCleared() {
         super.onCleared()
-        // Ensure we close/destroy all Rust objects
+        // Cleanup Rust resources
         _sessions.value.forEach { it.calculator.destroy() }
     }
 }

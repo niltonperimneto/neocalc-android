@@ -65,7 +65,7 @@ fun Calculator(
     val currentSession by viewModel.currentSession.collectAsState()
     val sessionList by viewModel.sessions.collectAsState()
     
-    // We observe the mode of the *current* session
+    // Observe current session mode
     val currentMode by viewModel.mode.collectAsState()
     val displayValue by viewModel.displayValue.collectAsState()
     
@@ -77,6 +77,57 @@ fun Calculator(
 
     if (showAbout) {
         AboutDialog { showAbout = false }
+    }
+
+    // Bottom Sheet State
+    val sheetState = androidx.compose.material3.rememberModalBottomSheetState()
+    var showModeSheet by remember { mutableStateOf(false) }
+
+    if (showModeSheet) {
+        androidx.compose.material3.ModalBottomSheet(
+            onDismissRequest = { showModeSheet = false },
+            sheetState = sheetState,
+            containerColor = MaterialTheme.colorScheme.surface
+        ) {
+            // Sheet Content
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 32.dp)
+            ) {
+                Text(
+                    "Select Mode",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(16.dp)
+                )
+                HorizontalDivider()
+                
+                CalculatorMode.values().forEach { mode ->
+                     val modeIcon = when (mode) {
+                         CalculatorMode.STANDARD -> Icons.Default.Calculate
+                         CalculatorMode.SCIENTIFIC -> Icons.Default.Science
+                         CalculatorMode.PROGRAMMING -> Icons.Default.Code
+                         CalculatorMode.FINANCIAL -> Icons.Default.AttachMoney
+                     }
+                     
+                     NavigationDrawerItem(
+                         label = { Text(mode.title) },
+                         icon = { Icon(modeIcon, null) },
+                         selected = currentMode == mode,
+                         onClick = {
+                             viewModel.setMode(mode)
+                             scope.launch { sheetState.hide() }.invokeOnCompletion { 
+                                 if (!sheetState.isVisible) {
+                                     showModeSheet = false
+                                 }
+                             }
+                         },
+                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                         shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                     )
+                }
+            }
+        }
     }
 
     ModalNavigationDrawer(
@@ -128,75 +179,24 @@ fun Calculator(
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             topBar = {
-                Column {
-                    // Thin Header: Theme + Mode Selector + About
-                    androidx.compose.foundation.layout.Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 4.dp), // Minimal padding
-                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween
-                    ) {
-                        // Theme Switcher (Brush Icon)
-                        IconButton(onClick = { viewModel.showThemeDialog.value = true }) {
-                            Icon(Icons.Default.Brush, contentDescription = "Themes")
-                        }
+                // Header
+                androidx.compose.foundation.layout.Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween
+                ) {
+                    // Theme Switcher (Brush Icon)
+                    IconButton(onClick = { viewModel.showThemeDialog.value = true }) {
+                        Icon(Icons.Default.Brush, contentDescription = "Themes")
+                    }
 
-                        // Mode Selector (Center)
-                        Box {
-                             var expanded by remember { mutableStateOf(false) }
-                             
-                             androidx.compose.material3.Button(
-                                 onClick = { expanded = true },
-                                 colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                     containerColor = androidx.compose.ui.graphics.Color.Transparent,
-                                     contentColor = MaterialTheme.colorScheme.onSurface
-                                 ),
-                                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-                             ) {
-                                 // Current Mode Icon and Text
-                                 val icon = when (currentMode) {
-                                     CalculatorMode.STANDARD -> Icons.Default.Calculate
-                                     // Fallbacks if Science not found, but trying Science
-                                     CalculatorMode.SCIENTIFIC -> Icons.Default.Science
-                                     CalculatorMode.PROGRAMMING -> Icons.Default.Code
-                                     CalculatorMode.FINANCIAL -> Icons.Default.AttachMoney
-                                 }
-                                 Icon(icon, contentDescription = null, modifier = Modifier.padding(end = 8.dp))
-                                 Text(currentMode.title, style = MaterialTheme.typography.titleMedium)
-                                 Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                             }
 
-                             DropdownMenu(
-                                 expanded = expanded,
-                                 onDismissRequest = { expanded = false },
-                                 offset = androidx.compose.ui.unit.DpOffset(0.dp, 10.dp), // Slight offset for notch/aesthetics
-                                 containerColor = MaterialTheme.colorScheme.surface
-                             ) {
-                                 CalculatorMode.values().forEach { mode ->
-                                     val modeIcon = when (mode) {
-                                         CalculatorMode.STANDARD -> Icons.Default.Calculate
-                                         CalculatorMode.SCIENTIFIC -> Icons.Default.Science
-                                         CalculatorMode.PROGRAMMING -> Icons.Default.Code
-                                         CalculatorMode.FINANCIAL -> Icons.Default.AttachMoney
-                                     }
-                                     
-                                     DropdownMenuItem(
-                                         text = { Text(mode.title) },
-                                         leadingIcon = { Icon(modeIcon, contentDescription = null) },
-                                         onClick = {
-                                             viewModel.setMode(mode)
-                                             expanded = false
-                                         }
-                                     )
-                                 }
-                             }
-                        }
-
-                        // About (Info Icon)
-                        IconButton(onClick = { showAbout = true }) {
-                            Icon(Icons.Filled.Info, contentDescription = "About")
-                        }
+                    
+                    // About (Info Icon)
+                    IconButton(onClick = { showAbout = true }) {
+                        Icon(Icons.Filled.Info, contentDescription = "About")
                     }
                 }
         }
@@ -210,12 +210,18 @@ fun Calculator(
             
             Display(
                 displayText = displayValue,
+                currentMode = currentMode,
+                onModeClick = { showModeSheet = true },
                 history = history,
-                modifier = Modifier.weight(0.4f)
+                modifier = Modifier.weight(1f)
             )
             
             // Grid container
-            Box(Modifier.weight(0.6f)) {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp) // Side padding to avoid corner cuts
+            ) {
                 when (currentMode) {
                     CalculatorMode.STANDARD -> StandardGrid(viewModel)
                     CalculatorMode.SCIENTIFIC -> ScientificGrid(viewModel)

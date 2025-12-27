@@ -3,24 +3,20 @@ package com.neocalc.app.ui.grids
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Backspace
-import androidx.compose.material.icons.filled.Calculate
-
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.neocalc.app.core.CalculatorViewModel
-import com.neocalc.app.ui.components.GridButton
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import com.neocalc.app.ui.components.ButtonType
+import com.neocalc.app.ui.components.GridButton
 
 @Composable
 fun StandardGrid(
     viewModel: CalculatorViewModel,
     modifier: Modifier = Modifier
 ) {
-    // Scrollable container for density and extra rows
+    // Scrollable container
     Column(
         modifier = modifier
             .fillMaxWidth()

@@ -18,42 +18,68 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 
 @Composable
 fun Display(
     displayText: String,
+    currentMode: com.neocalc.app.core.CalculatorMode,
+    onModeClick: () -> Unit,
     history: List<String> = emptyList(),
     modifier: Modifier = Modifier
 ) {
-    // Minimalist container: No hard background, just padding and alignment.
-    // The background is handled by the scaffold/theme surface.
+    // Display Container
     Box(
         modifier = modifier
             .fillMaxWidth()
             .padding(24.dp), // Increased padding
-        contentAlignment = Alignment.BottomEnd
     ) {
+        // Mode Indicator (Top Center)
+        androidx.compose.material3.Surface(
+            onClick = onModeClick,
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            modifier = Modifier.align(Alignment.TopCenter)
+        ) {
+            androidx.compose.foundation.layout.Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+
+                Text(
+                     text = currentMode.title.uppercase(),
+                     style = MaterialTheme.typography.labelSmall,
+                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                androidx.compose.foundation.layout.Spacer(Modifier.width(4.dp))
+                androidx.compose.material3.Icon(
+                    imageVector = androidx.compose.material.icons.Icons.Default.ArrowDropDown,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
         Column(
             horizontalAlignment = Alignment.End,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomEnd) // Align content to bottom
+                .padding(top = 32.dp) // Space for the indicator
         ) {
             // History List
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
-                reverseLayout = true, // Show newest at bottom (visually above current input)
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 8.dp)
+
             ) {
-                 // History comes as oldest->newest. We want to see them just above the current display.
-                 // With reverseLayout=true, item 0 is at the bottom. 
-                 // So we should reverse the list if we want standard "chat/log" behavior where we scroll up to see old.
-                 // Actually, standard logs: line 1, line 2... line N (bottom).
-                 // If we use reverseLayout=true, we should pass reversed list or just rely on natural stacking?
-                 // Let's just use standard LazyColumn with Arrangement.Bottom so it stacks from bottom up, 
-                 // but we need to verify scroll behavior.
-                 // Simpler: Just standard Column/LazyColumn filling space.
-                 items(history.asReversed()) { item ->
+                 items(history) { item ->
                      Text(
                         text = item,
                         style = MaterialTheme.typography.titleMedium,

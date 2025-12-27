@@ -3,8 +3,14 @@
     android:height="108dp"
     android:viewportWidth="512"
     android:viewportHeight="512">
-    <!-- N Path from logo.svg -->
-    <path
-        android:fillColor="#1a5fb4"
-        android:pathData="M 120,400 V 120 l 80,-16 68,96 11,17 14,23 14,23 -9,23 -1.5,-34 -1,-37 -0.2,-29 V 85 l 78,-15 v 279 l -79,16 -63,-89 -14,-20 -18,-28 -19,-32 15,-7.5 2,38 0.7,33 0.2,23 v 102 z" />
+    <!-- N Path from logo.svg, scaled down to fits in safe zone -->
+    <group
+        android:pivotX="256"
+        android:pivotY="256"
+        android:scaleX="0.65"
+        android:scaleY="0.65">
+        <path
+            android:fillColor="#1a5fb4"
+            android:pathData="M 120,400 V 120 l 80,-16 68,96 11,17 14,23 14,23 -9,23 -1.5,-34 -1,-37 -0.2,-29 V 85 l 78,-15 v 279 l -79,16 -63,-89 -14,-20 -18,-28 -19,-32 15,-7.5 2,38 0.7,33 0.2,23 v 102 z" />
+    </group>
 </vector>

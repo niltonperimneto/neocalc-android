@@ -14,7 +14,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.aspectRatio
-// Removed StyleManager import
+
 
 enum class ButtonType {
     NUMBER, OPERATOR, FUNCTION, EQUALS, DESTRUCTIVE, NONE
@@ -54,15 +54,13 @@ fun GridButton(
             containerColor = containerColor,
             contentColor = contentColor
         ),
-        // Use CircleShape for a modern, pill/circle look. 
-        // If buttons are not square, this will make them pill-shaped automatically.
-        // User requested square with slightly rounded corners and compact density
+        // Rounded shape for modern look
         shape = androidx.compose.foundation.shape.RoundedCornerShape(15), 
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
         modifier = modifier
             .padding(2.dp) // Compact padding
             .fillMaxSize()
-            .then(if (useAspectRatio) Modifier.aspectRatio(1.2f) else Modifier) 
+            .then(if (useAspectRatio) Modifier.aspectRatio(1.6f) else Modifier) 
     ) {
         if (imageVector != null) {
             Icon(

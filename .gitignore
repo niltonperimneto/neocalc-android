@@ -39,3 +39,23 @@ Thumbs.db
 
 # VS Code
 .vscode/
+
+# Eclipse
+.project
+.settings/
+.classpath
+
+# Kotlin
+.kotlin/
+
+# Logs
+build_log.txt
+*.log
+
+# Editor Backups
+*.swp
+*~
+*.bak
+android/app/release/app-release.aab
+android/app/release/baselineProfiles/0/app-release.dm
+.gitignore

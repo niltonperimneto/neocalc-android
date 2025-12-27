@@ -23,7 +23,7 @@ object ThemeManager {
     private val _availableThemes = MutableStateFlow<List<String>>(emptyList())
     val availableThemes: StateFlow<List<String>> = _availableThemes.asStateFlow()
 
-    // Default Fallback (Material)
+    // Default Fallback
     private val DefaultScheme = darkColorScheme(
         primary = Color(0xFFD0BCFF),
         secondary = Color(0xFFCCC2DC),
@@ -33,18 +33,30 @@ object ThemeManager {
     fun initialize(context: Context) {
         val assetManager = context.assets
         try {
-            val themes = assetManager.list("themes")
+            val assetThemes = assetManager.list("themes")
                 ?.filter { it.endsWith(".css") }
                 ?.map { it.removeSuffix(".css") }
                 ?.sorted() ?: emptyList()
             
-            _availableThemes.value = themes
+            // Allow user to import themes to filesDir/themes
+            val localThemesDir = java.io.File(context.filesDir, "themes")
+            if (!localThemesDir.exists()) localThemesDir.mkdirs()
+            
+            val localThemes = localThemesDir.listFiles()
+                ?.filter { it.name.endsWith(".css") }
+                ?.map { it.name.removeSuffix(".css") }
+                ?.sorted() ?: emptyList()
+
+            // Merge unique
+            val allThemes = (assetThemes + localThemes).distinct().sorted()
+            
+            _availableThemes.value = allThemes
             
             // Load default theme if exists, else first
-            if (themes.contains("dracula")) {
+            if (allThemes.contains("dracula")) {
                 loadTheme(context, "dracula")
-            } else if (themes.isNotEmpty()) {
-                loadTheme(context, themes.first())
+            } else if (allThemes.isNotEmpty()) {
+                loadTheme(context, allThemes.first())
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -53,9 +65,17 @@ object ThemeManager {
 
     fun loadTheme(context: Context, themeName: String) {
         try {
-            val cssContent = context.assets.open("themes/$themeName.css").use { stream ->
-                BufferedReader(InputStreamReader(stream)).readText()
+            // Try Loading from Local Files first (User overrides)
+            val localFile = java.io.File(context.filesDir, "themes/$themeName.css")
+            val cssContent = if (localFile.exists()) {
+                 localFile.readText()
+            } else {
+                 // Fallback to Assets
+                 context.assets.open("themes/$themeName.css").use { stream ->
+                     BufferedReader(InputStreamReader(stream)).readText()
+                 }
             }
+            
             val parsedColors = parseCssColors(cssContent)
             val scheme = mapToColorScheme(parsedColors)
             _currentTheme.value = ThemeInfo(themeName, scheme)
@@ -64,10 +84,63 @@ object ThemeManager {
         }
     }
 
+    fun importTheme(context: Context, uri: android.net.Uri) {
+         try {
+             val contentResolver = context.contentResolver
+             val fileName = getFileName(context, uri) ?: "imported_theme.css"
+             // Ensure .css extension
+             val safeName = if (fileName.endsWith(".css")) fileName else "$fileName.css"
+             
+             val themesDir = java.io.File(context.filesDir, "themes")
+             if (!themesDir.exists()) themesDir.mkdirs()
+             
+             val destFile = java.io.File(themesDir, safeName)
+             
+             contentResolver.openInputStream(uri)?.use { input ->
+                 java.io.FileOutputStream(destFile).use { output ->
+                     input.copyTo(output)
+                 }
+             }
+             
+             // Reload list
+             initialize(context)
+             
+             // Auto-select imported theme
+             loadTheme(context, safeName.removeSuffix(".css"))
+             
+         } catch (e: Exception) {
+             e.printStackTrace()
+         }
+    }
+
+    private fun getFileName(context: Context, uri: android.net.Uri): String? {
+        var result: String? = null
+        if (uri.scheme == "content") {
+            val cursor = context.contentResolver.query(uri, null, null, null, null)
+            try {
+                if (cursor != null && cursor.moveToFirst()) {
+                    val index = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                    if (index >= 0) {
+                        result = cursor.getString(index)
+                    }
+                }
+            } finally {
+                cursor?.close()
+            }
+        }
+        if (result == null) {
+            result = uri.path
+            val cut = result?.lastIndexOf('/')
+            if (cut != null && cut != -1) {
+                result = result?.substring(cut + 1)
+            }
+        }
+        return result
+    }
+
     private fun parseCssColors(css: String): Map<String, Long> {
         val colorMap = mutableMapOf<String, Long>()
-        // Regex to find @define-color name #RRGGBB; or #RGB;
-        // Simple parser assuming hex codes
+        // Parse @define-color name #hex;
         val regex = Regex("@define-color\\s+([\\w_]+)\\s+(#[A-Fa-f0-9]{3,8});")
         regex.findAll(css).forEach { match ->
             val name = match.groupValues[1]
@@ -96,8 +169,7 @@ object ThemeManager {
         // Default to dark scheme baseline
         val base = darkColorScheme()
 
-        // Extract GTK colors
-        // Note: GTK themes use window_bg_color, accent_bg_color etc.
+        // Map GTK colors to Material scheme
         
         val windowBg = colors["window_bg_color"]?.let { Color(it) } ?: base.background
         val windowFg = colors["window_fg_color"]?.let { Color(it) } ?: base.onBackground
@@ -111,15 +183,7 @@ object ThemeManager {
         val destructiveBg = colors["destructive_bg_color"]?.let { Color(it) } ?: base.error
         val destructiveFg = colors["destructive_fg_color"]?.let { Color(it) } ?: base.onError
 
-        // Secondary Accent / Warning Color matching
-        // Many themes use warning_bg_color (Orange) or success_bg_color (Green)
-        // We will try to map Operators to 'warning_bg_color' (Orange-ish) which creates a secondary accent.
-        val warningBg = colors["warning_bg_color"]?.let { Color(it) } 
-            ?: colors["warning_color"]?.let { Color(it) }
-            ?: accentBg // Fallback if no warning color
-
-        // If warningBg is the same as accentBg, maybe we can shift it or use inverse? 
-        // But for now, let's assume themes have it or we fallback to accent.
+        // Use warning color for Tertiary role
         
         val warningFg = colors["warning_fg_color"]?.let { Color(it) } 
              ?: base.onTertiaryContainer
