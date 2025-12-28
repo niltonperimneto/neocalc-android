@@ -31,8 +31,12 @@ fun ThemeDialog(onDismiss: () -> Unit) {
     val context = LocalContext.current
     val availableThemes by ThemeManager.availableThemes.collectAsState()
     val currentTheme by ThemeManager.currentTheme.collectAsState()
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
 
     AlertDialog(
+        containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface,
+        titleContentColor = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+        textContentColor = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
         onDismissRequest = onDismiss,
         title = { Text("Select Theme") },
         text = {
@@ -42,7 +46,9 @@ fun ThemeDialog(onDismiss: () -> Unit) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                ThemeManager.loadTheme(context, themeName)
+                                scope.launch {
+                                    ThemeManager.loadTheme(context, themeName)
+                                }
                                 onDismiss()
                             }
                             .padding(vertical = 8.dp),
@@ -51,7 +57,9 @@ fun ThemeDialog(onDismiss: () -> Unit) {
                         RadioButton(
                             selected = currentTheme?.name == themeName,
                             onClick = {
-                                ThemeManager.loadTheme(context, themeName)
+                                scope.launch {
+                                    ThemeManager.loadTheme(context, themeName)
+                                }
                                 onDismiss()
                             }
                         )
@@ -73,7 +81,9 @@ fun ThemeDialog(onDismiss: () -> Unit) {
                      contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
                  ) { uri: android.net.Uri? ->
                      uri?.let {
-                         ThemeManager.importTheme(context, it)
+                         scope.launch {
+                             ThemeManager.importTheme(context, it)
+                         }
                      }
                  }
                  

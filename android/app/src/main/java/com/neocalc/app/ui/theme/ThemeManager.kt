@@ -30,88 +30,95 @@ object ThemeManager {
         tertiary = Color(0xFFEFB8C8)
     )
 
-    fun initialize(context: Context) {
-        val assetManager = context.assets
-        try {
-            val assetThemes = assetManager.list("themes")
-                ?.filter { it.endsWith(".css") }
-                ?.map { it.removeSuffix(".css") }
-                ?.sorted() ?: emptyList()
-            
-            // Allow user to import themes to filesDir/themes
-            val localThemesDir = java.io.File(context.filesDir, "themes")
-            if (!localThemesDir.exists()) localThemesDir.mkdirs()
-            
-            val localThemes = localThemesDir.listFiles()
-                ?.filter { it.name.endsWith(".css") }
-                ?.map { it.name.removeSuffix(".css") }
-                ?.sorted() ?: emptyList()
+    suspend fun initialize(context: Context) {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val assetManager = context.assets
+            try {
+                val assetThemes = assetManager.list("themes")
+                    ?.filter { it.endsWith(".css") }
+                    ?.map { it.removeSuffix(".css") }
+                    ?.sorted() ?: emptyList()
 
-            // Merge unique
-            val allThemes = (assetThemes + localThemes).distinct().sorted()
-            
-            _availableThemes.value = allThemes
-            
-            // Load default theme if exists, else first
-            if (allThemes.contains("material")) {
-                loadTheme(context, "material")
-            } else if (allThemes.contains("dracula")) {
-                loadTheme(context, "dracula")
-            } else if (allThemes.isNotEmpty()) {
-                loadTheme(context, allThemes.first())
+                // Allow user to import themes to filesDir/themes
+                val localThemesDir = java.io.File(context.filesDir, "themes")
+                if (!localThemesDir.exists()) localThemesDir.mkdirs()
+
+                val localThemes = localThemesDir.listFiles()
+                    ?.filter { it.name.endsWith(".css") }
+                    ?.map { it.name.removeSuffix(".css") }
+                    ?.sorted() ?: emptyList()
+
+                // Merge unique
+                val allThemes = (assetThemes + localThemes).distinct().sorted()
+
+                _availableThemes.value = allThemes
+
+                // Load default theme if exists, else first
+                // Note: Recursive calls to loadTheme inside withContext are fine since loadTheme is also suspend/withContext
+                if (allThemes.contains("material")) {
+                    loadTheme(context, "material")
+                } else if (allThemes.contains("dracula")) {
+                    loadTheme(context, "dracula")
+                } else if (allThemes.isNotEmpty()) {
+                    loadTheme(context, allThemes.first())
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 
-    fun loadTheme(context: Context, themeName: String) {
-        try {
-            // Try Loading from Local Files first (User overrides)
-            val localFile = java.io.File(context.filesDir, "themes/$themeName.css")
-            val cssContent = if (localFile.exists()) {
-                 localFile.readText()
-            } else {
-                 // Fallback to Assets
-                 context.assets.open("themes/$themeName.css").use { stream ->
-                     BufferedReader(InputStreamReader(stream)).readText()
-                 }
+    suspend fun loadTheme(context: Context, themeName: String) {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                // Try Loading from Local Files first (User overrides)
+                val localFile = java.io.File(context.filesDir, "themes/$themeName.css")
+                val cssContent = if (localFile.exists()) {
+                    localFile.readText()
+                } else {
+                    // Fallback to Assets
+                    context.assets.open("themes/$themeName.css").use { stream ->
+                        BufferedReader(InputStreamReader(stream)).readText()
+                    }
+                }
+
+                val parsedColors = uniffi.neocalc_backend.parseThemeCss(cssContent)
+                val scheme = mapToColorScheme(parsedColors)
+                _currentTheme.value = ThemeInfo(themeName, scheme)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-            
-            val parsedColors = parseCssColors(cssContent)
-            val scheme = mapToColorScheme(parsedColors)
-            _currentTheme.value = ThemeInfo(themeName, scheme)
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 
-    fun importTheme(context: Context, uri: android.net.Uri) {
-         try {
-             val contentResolver = context.contentResolver
-             val fileName = getFileName(context, uri) ?: "imported_theme.css"
-             // Ensure .css extension
-             val safeName = if (fileName.endsWith(".css")) fileName else "$fileName.css"
-             
-             val themesDir = java.io.File(context.filesDir, "themes")
-             if (!themesDir.exists()) themesDir.mkdirs()
-             
-             val destFile = java.io.File(themesDir, safeName)
-             
-             contentResolver.openInputStream(uri)?.use { input ->
-                 java.io.FileOutputStream(destFile).use { output ->
-                     input.copyTo(output)
+    suspend fun importTheme(context: Context, uri: android.net.Uri) {
+         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+             try {
+                 val contentResolver = context.contentResolver
+                 val fileName = getFileName(context, uri) ?: "imported_theme.css"
+                 // Ensure .css extension
+                 val safeName = if (fileName.endsWith(".css")) fileName else "$fileName.css"
+
+                 val themesDir = java.io.File(context.filesDir, "themes")
+                 if (!themesDir.exists()) themesDir.mkdirs()
+
+                 val destFile = java.io.File(themesDir, safeName)
+
+                 contentResolver.openInputStream(uri)?.use { input ->
+                     java.io.FileOutputStream(destFile).use { output ->
+                         input.copyTo(output)
+                     }
                  }
+
+                 // Reload list
+                 initialize(context)
+
+                 // Auto-select imported theme
+                 loadTheme(context, safeName.removeSuffix(".css"))
+
+             } catch (e: Exception) {
+                 e.printStackTrace()
              }
-             
-             // Reload list
-             initialize(context)
-             
-             // Auto-select imported theme
-             loadTheme(context, safeName.removeSuffix(".css"))
-             
-         } catch (e: Exception) {
-             e.printStackTrace()
          }
     }
 
@@ -138,33 +145,6 @@ object ThemeManager {
             }
         }
         return result
-    }
-
-    private fun parseCssColors(css: String): Map<String, Long> {
-        val colorMap = mutableMapOf<String, Long>()
-        // Parse @define-color name #hex;
-        val regex = Regex("@define-color\\s+([\\w_]+)\\s+(#[A-Fa-f0-9]{3,8});")
-        regex.findAll(css).forEach { match ->
-            val name = match.groupValues[1]
-            val hex = match.groupValues[2]
-            colorMap[name] = parseHexColor(hex)
-        }
-        return colorMap
-    }
-
-    private fun parseHexColor(hex: String): Long {
-        var cleanHex = hex.removePrefix("#")
-        if (cleanHex.length == 3) {
-            cleanHex = cleanHex.map { "$it$it" }.joinToString("")
-        }
-        if (cleanHex.length == 6) {
-            cleanHex = "FF$cleanHex" // Add Alpha
-        }
-        return try {
-            cleanHex.toLong(16)
-        } catch (e: Exception) {
-            0xFF000000
-        }
     }
 
     private fun mapToColorScheme(colors: Map<String, Long>): ColorScheme {

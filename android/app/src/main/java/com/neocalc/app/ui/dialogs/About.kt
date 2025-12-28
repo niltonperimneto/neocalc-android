@@ -15,9 +15,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import coil.compose.AsyncImage
-import coil.decode.SvgDecoder
 import coil.ImageLoader
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
+import com.neocalc.app.BuildConfig
 
 @Composable
 fun AboutDialog(
@@ -34,11 +37,13 @@ fun AboutDialog(
             ) {
                 // Logo
                 val context = androidx.compose.ui.platform.LocalContext.current
-                val imageLoader = coil.ImageLoader.Builder(context)
-                    .components {
-                        add(coil.decode.SvgDecoder.Factory())
-                    }
-                    .build()
+                val imageLoader = androidx.compose.runtime.remember(context) {
+                    coil.ImageLoader.Builder(context)
+                        .components {
+                            add(coil.decode.SvgDecoder.Factory())
+                        }
+                        .build()
+                }
 
                 coil.compose.AsyncImage(
                     model = "file:///android_asset/logo.svg",
@@ -76,6 +81,52 @@ fun AboutDialog(
                     Text("View Full License")
                 }
                 
+                // Update Checker
+                val scope = androidx.compose.runtime.rememberCoroutineScope()
+                var updateStatus by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<com.neocalc.app.utils.UpdateStatus>(com.neocalc.app.utils.UpdateStatus.Idle) }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                when (val status = updateStatus) {
+                    is com.neocalc.app.utils.UpdateStatus.Idle -> {
+                        TextButton(onClick = {
+                            updateStatus = com.neocalc.app.utils.UpdateStatus.Loading
+                            scope.launch {
+                                updateStatus = com.neocalc.app.utils.UpdateManager.checkForUpdates(com.neocalc.app.BuildConfig.VERSION_NAME)
+                            }
+                        }) {
+                            Text("Check for Updates")
+                        }
+                    }
+                    is com.neocalc.app.utils.UpdateStatus.Loading -> {
+                        androidx.compose.material3.CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
+                    }
+                    is com.neocalc.app.utils.UpdateStatus.UpToDate -> {
+                        Text("You are up to date! ✅", color = androidx.compose.material3.MaterialTheme.colorScheme.primary)
+                        TextButton(onClick = { updateStatus = com.neocalc.app.utils.UpdateStatus.Idle }) {
+                            Text("Check Again")
+                        }
+                    }
+                    is com.neocalc.app.utils.UpdateStatus.Available -> {
+                        Text("New Version Available: ${status.version}", color = androidx.compose.material3.MaterialTheme.colorScheme.error)
+                        TextButton(onClick = {
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(status.downloadUrl))
+                            context.startActivity(intent)
+                        }) {
+                            Text("Download Latest Release")
+                        }
+                    }
+                    is com.neocalc.app.utils.UpdateStatus.Error -> {
+                        Text("Error: ${status.message}", color = androidx.compose.material3.MaterialTheme.colorScheme.error)
+                        TextButton(onClick = { updateStatus = com.neocalc.app.utils.UpdateStatus.Idle }) {
+                            Text("Retry")
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 // GitHub Link
