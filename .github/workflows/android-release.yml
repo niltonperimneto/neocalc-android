@@ -75,16 +75,27 @@ jobs:
 
     - name: Configure Keystore
       run: |
-        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/keystore.jks
+        # Decode to file first to avoid pipe issues
+        echo "$KEYSTORE_BASE64" > keystore.b64
+        base64 -d keystore.b64 > android/app/keystore.jks
+        ls -l android/app/keystore.jks
       env:
         KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+
+    - name: Verify Keystore
+      run: |
+        keytool -list -v -keystore android/app/keystore.jks -alias "$KEY_ALIAS" -storepass "$KEYSTORE_PASSWORD" -keypass "$KEY_PASSWORD"
+      env:
+        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
     - name: Grant execute permission for gradlew
       run: chmod +x android/gradlew
 
     - name: Build with Gradle
       working-directory: android
-      run: ./gradlew assembleRelease
+      run: ./gradlew assembleRelease --stacktrace
       env:
         KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
