@@ -36,7 +36,7 @@ fun Display(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(24.dp), // Increased padding
+            .padding( 15.dp), // Increased padding
     ) {
         // Mode Indicator (Top Center)
         androidx.compose.material3.Surface(
