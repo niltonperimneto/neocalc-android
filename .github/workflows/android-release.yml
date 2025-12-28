@@ -75,10 +75,27 @@ jobs:
 
     - name: Configure Keystore
       run: |
-        # Decode to file first to avoid pipe issues
+        # Check if secret is present
+        if [ -z "$KEYSTORE_BASE64" ]; then
+          echo "ERROR: KEYSTORE_BASE64 secret is empty or not set!"
+          exit 1
+        fi
+        
+        # Print length of secret for debugging (safe)
+        echo "Secret length: ${#KEYSTORE_BASE64}"
+        
+        # Decode
         echo "$KEYSTORE_BASE64" > keystore.b64
-        base64 -d keystore.b64 > android/app/keystore.jks
-        ls -l android/app/keystore.jks
+        base64 -d -i keystore.b64 > android/app/keystore.jks
+        
+        # Verify file size
+        FILE_SIZE=$(stat -c%s "android/app/keystore.jks")
+        echo "Keystore file size: $FILE_SIZE bytes"
+        
+        if [ "$FILE_SIZE" -eq 0 ]; then
+             echo "ERROR: Keystore file is 0 bytes after decoding."
+             exit 1
+        fi
       env:
         KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
 
