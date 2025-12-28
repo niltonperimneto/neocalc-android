@@ -55,6 +55,16 @@ fun NeoCalcTheme(
     val context = LocalContext.current
     val currentThemeInfo by ThemeManager.currentTheme.collectAsState()
 
+    // Automatic Switch between material (dark) and material-light (light)
+    androidx.compose.runtime.LaunchedEffect(darkTheme, currentThemeInfo) {
+        val themeName = currentThemeInfo?.name
+        if (themeName == "material" && !darkTheme) {
+            ThemeManager.loadTheme(context, "material-light")
+        } else if (themeName == "material-light" && darkTheme) {
+            ThemeManager.loadTheme(context, "material")
+        }
+    }
+
     val colorScheme = when {
         // 1. Custom Theme Selected
         currentThemeInfo != null -> currentThemeInfo!!.colorScheme

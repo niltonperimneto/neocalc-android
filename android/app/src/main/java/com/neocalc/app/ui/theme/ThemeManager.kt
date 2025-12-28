@@ -53,7 +53,9 @@ object ThemeManager {
             _availableThemes.value = allThemes
             
             // Load default theme if exists, else first
-            if (allThemes.contains("dracula")) {
+            if (allThemes.contains("material")) {
+                loadTheme(context, "material")
+            } else if (allThemes.contains("dracula")) {
                 loadTheme(context, "dracula")
             } else if (allThemes.isNotEmpty()) {
                 loadTheme(context, allThemes.first())
