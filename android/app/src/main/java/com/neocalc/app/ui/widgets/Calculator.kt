@@ -70,7 +70,6 @@ fun Calculator(
     val currentMode by viewModel.mode.collectAsState()
     val displayValue by viewModel.displayValue.collectAsState()
     
-    val modes = CalculatorMode.values()
     var showAbout by remember { mutableStateOf(false) }
     
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -103,7 +102,9 @@ fun Calculator(
                 )
                 HorizontalDivider()
                 
-                CalculatorMode.values().forEach { mode ->
+                HorizontalDivider()
+                
+                CalculatorMode.entries.forEach { mode ->
                      val modeIcon = when (mode) {
                          CalculatorMode.STANDARD -> Icons.Default.Calculate
                          CalculatorMode.SCIENTIFIC -> Icons.Default.Science

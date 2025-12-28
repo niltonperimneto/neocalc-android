@@ -12,7 +12,7 @@ pub fn parse_theme_css(css: String) -> HashMap<String, i64> {
             let parts: Vec<&str> = line.split_whitespace().collect();
             if parts.len() >= 3 {
                 let key = parts[1];
-                let mut hex = parts[2].trim_end_matches(';');
+                let hex = parts[2].trim_end_matches(';');
                 
                 if let Some(parsed) = parse_hex_color(hex) {
                     color_map.insert(key.to_string(), parsed);

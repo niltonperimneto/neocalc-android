@@ -33,8 +33,11 @@ class CalculatorViewModel : ViewModel() {
     // UI State for Dialogs
     val showThemeDialog = MutableStateFlow(false)
 
-    // Expose current mode dynamically
-    val mode: StateFlow<CalculatorMode> get() = _currentSession.value?.mode?.asStateFlow() ?: MutableStateFlow(CalculatorMode.STANDARD).asStateFlow()
+    // Expose current mode dynamically via stable StateFlow
+    private val _mode = MutableStateFlow(CalculatorMode.STANDARD)
+    val mode: StateFlow<CalculatorMode> = _mode.asStateFlow()
+
+    private var modeCollectionJob: kotlinx.coroutines.Job? = null
 
     init {
 
@@ -53,10 +56,19 @@ class CalculatorViewModel : ViewModel() {
 
     fun switchToSession(session: Session) {
         _currentSession.value = session
-        // Sync display and history from the new session's calculator state
+        
+        // Sync display and history and mode
         viewModelScope.launch {
             _displayValue.value = session.calculator.getBuffer()
             _history.value = session.calculator.getHistory()
+        }
+        
+        // Sync Mode: Cancel previous collector and start new one
+        modeCollectionJob?.cancel()
+        modeCollectionJob = viewModelScope.launch {
+            session.mode.collect { newMode ->
+                _mode.value = newMode
+            }
         }
     }
     

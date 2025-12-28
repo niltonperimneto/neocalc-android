@@ -4,5 +4,9 @@ enum class CalculatorMode(val title: String) {
     STANDARD("Standard"),
     SCIENTIFIC("Scientific"),
     PROGRAMMING("Programming"),
-    FINANCIAL("Financial")
+    FINANCIAL("Financial");
+
+    companion object {
+        val entries = values().toList()
+    }
 }
