@@ -9,7 +9,6 @@ import com.neocalc.app.ui.components.ButtonType
 import com.neocalc.app.ui.components.GridButton
 
 @Composable
-@Composable
 fun StandardGrid(
     viewModel: CalculatorViewModel,
     modifier: Modifier = Modifier

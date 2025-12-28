@@ -9,7 +9,6 @@ import com.neocalc.app.ui.components.GridButton
 import com.neocalc.app.ui.components.ButtonType
 
 @Composable
-@Composable
 fun FinancialGrid(
     viewModel: CalculatorViewModel,
     modifier: Modifier = Modifier
