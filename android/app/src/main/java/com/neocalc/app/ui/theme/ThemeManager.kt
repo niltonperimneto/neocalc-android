@@ -187,6 +187,9 @@ object ThemeManager {
         
         val warningFg = colors["warning_fg_color"]?.let { Color(it) } 
              ?: base.onTertiaryContainer
+             
+        val warningBg = colors["warning_bg_color"]?.let { Color(it) } 
+             ?: base.tertiaryContainer
         
         // Card / Button colors
         val cardBg = colors["card_bg_color"]?.let { Color(it) } ?: headerBg

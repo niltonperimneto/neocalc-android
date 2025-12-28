@@ -1,0 +1,49 @@
+name: Create Release Tag
+
+on:
+  workflow_dispatch:
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Configure Git
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+
+    - name: Create and Push Tag
+      run: |
+        # Get current date in YYYY.MM format
+        YEAR_MONTH=$(date +'%Y.%m')
+        
+        # Fetch all tags
+        git fetch --tags
+        
+        # Find existing tags matching pattern vYYYY.MM-R
+        # Sort version-numerically to get the highest revision
+        LAST_TAG=$(git tag -l "v$YEAR_MONTH-*" | sort -V | tail -n 1)
+        
+        if [ -z "$LAST_TAG" ]; then
+          echo "No tags found for $YEAR_MONTH. Starting at revision 1."
+          NEW_TAG="v$YEAR_MONTH-1"
+        else
+          echo "Found existing tag: $LAST_TAG"
+          # Extract revision number (everything after the last dash)
+          REV=${LAST_TAG##*-}
+          # Increment revision
+          NEXT_REV=$((REV + 1))
+          NEW_TAG="v$YEAR_MONTH-$NEXT_REV"
+        fi
+        
+        echo "Creating new tag: $NEW_TAG"
+        
+        git tag $NEW_TAG
+        git push origin $NEW_TAG

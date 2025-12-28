@@ -1,6 +1,7 @@
 package com.neocalc.app.ui.widgets
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -192,8 +193,6 @@ fun Calculator(
                         Icon(Icons.Default.Brush, contentDescription = "Themes")
                     }
 
-
-                    
                     // About (Info Icon)
                     IconButton(onClick = { showAbout = true }) {
                         Icon(Icons.Filled.Info, contentDescription = "About")
@@ -201,36 +200,68 @@ fun Calculator(
                 }
         }
     ) { innerPadding ->
-        Column(
+        BoxWithConstraints(
             modifier = Modifier
                 .padding(innerPadding)
+                .padding(bottom = 16.dp) // Safety margin for screen corners
                 .fillMaxSize()
         ) {
+            val isLandscape = maxWidth > maxHeight
+            
             val history by viewModel.history.collectAsState()
             
-            Display(
-                displayText = displayValue,
-                currentMode = currentMode,
-                onModeClick = { showModeSheet = true },
-                history = history,
-                modifier = Modifier.weight(1f)
-            )
-            
-            // Grid container
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp) // Side padding to avoid corner cuts
-            ) {
-                when (currentMode) {
-                    CalculatorMode.STANDARD -> StandardGrid(viewModel)
-                    CalculatorMode.SCIENTIFIC -> ScientificGrid(viewModel)
-                    CalculatorMode.PROGRAMMING -> ProgrammingGrid(viewModel)
-                    CalculatorMode.FINANCIAL -> FinancialGrid(viewModel)
+            // Shared Grid Content
+            val gridContent: @Composable (Modifier) -> Unit = { modifier ->
+                Box(
+                    modifier = modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp),
+                    contentAlignment = androidx.compose.ui.Alignment.BottomCenter // Pin to bottom
+                ) {
+                    when (currentMode) {
+                        CalculatorMode.STANDARD -> StandardGrid(viewModel)
+                        CalculatorMode.SCIENTIFIC -> ScientificGrid(viewModel)
+                        CalculatorMode.PROGRAMMING -> ProgrammingGrid(viewModel)
+                        CalculatorMode.FINANCIAL -> FinancialGrid(viewModel)
+                    }
+                }
+            }
+
+            if (isLandscape) {
+                // LANDSCAPE: Row Layout
+                androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxSize()) {
+                    // Left: Display (50%)
+                    Display(
+                        displayText = displayValue,
+                        currentMode = currentMode,
+                        onModeClick = { showModeSheet = true },
+                        history = history,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxSize()
+                    )
+                    
+                    // Right: Grid (50%)
+                    gridContent(Modifier.weight(1f))
+                }
+            } else {
+                // PORTRAIT: Column Layout
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Display(
+                        displayText = displayValue,
+                        currentMode = currentMode,
+                        onModeClick = { showModeSheet = true },
+                        history = history,
+                        modifier = Modifier.weight(0.3f) // Display takes 30%
+                    )
+                    
+                    // Grid takes remaining space 70%
+                    gridContent(Modifier.weight(0.7f))
                 }
             }
         }
     }
 }
 }
+
 
