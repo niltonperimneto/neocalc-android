@@ -49,7 +49,7 @@ fun AboutDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                Text(text = "Version: 1.0")
+                Text(text = "Version: ${com.neocalc.app.BuildConfig.VERSION_NAME}")
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(text = "Developer: Nilton Perim Neto", fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(4.dp))
