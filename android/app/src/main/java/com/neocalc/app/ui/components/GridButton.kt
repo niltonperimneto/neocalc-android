@@ -48,14 +48,19 @@ fun GridButton(
         else -> MaterialTheme.colorScheme.onSecondaryContainer
     }
 
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+
     Button(
-        onClick = onClick,
+        onClick = {
+            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress) // or TextHandleMove/VirtualKey
+            onClick()
+        },
         colors = ButtonDefaults.buttonColors(
             containerColor = containerColor,
             contentColor = contentColor
         ),
         // Rounded shape for modern look
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(15), 
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp), 
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
         modifier = modifier
             .padding(2.dp) // Compact padding

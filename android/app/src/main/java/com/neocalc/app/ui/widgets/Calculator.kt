@@ -38,6 +38,7 @@ import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -148,6 +149,20 @@ fun Calculator(
                             viewModel.switchToSession(session)
                             scope.launch { drawerState.close() }
                         },
+                        // Close button in badge slot
+                        badge = {
+                            if (sessionList.size > 1) {
+                                IconButton(
+                                    onClick = { viewModel.removeSession(session) }
+                                ) {
+                                    Icon(
+                                        imageVector = androidx.compose.material.icons.Icons.Default.Close,
+                                        contentDescription = "Close Session",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        },
                         // Match GridButton shape
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(15),
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
@@ -219,11 +234,20 @@ fun Calculator(
                         .padding(horizontal = 8.dp),
                     contentAlignment = androidx.compose.ui.Alignment.BottomCenter // Pin to bottom
                 ) {
-                    when (currentMode) {
-                        CalculatorMode.STANDARD -> StandardGrid(viewModel)
-                        CalculatorMode.SCIENTIFIC -> ScientificGrid(viewModel)
-                        CalculatorMode.PROGRAMMING -> ProgrammingGrid(viewModel)
-                        CalculatorMode.FINANCIAL -> FinancialGrid(viewModel)
+                    androidx.compose.animation.AnimatedContent(
+                        targetState = currentMode,
+                        transitionSpec = {
+                            (androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { height -> height })
+                                .togetherWith(androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutVertically { height -> -height })
+                        },
+                        label = "Grid Transition"
+                    ) { targetMode ->
+                         when (targetMode) {
+                            CalculatorMode.STANDARD -> StandardGrid(viewModel)
+                            CalculatorMode.SCIENTIFIC -> ScientificGrid(viewModel)
+                            CalculatorMode.PROGRAMMING -> ProgrammingGrid(viewModel)
+                            CalculatorMode.FINANCIAL -> FinancialGrid(viewModel)
+                        }
                     }
                 }
             }
@@ -231,19 +255,19 @@ fun Calculator(
             if (isLandscape) {
                 // LANDSCAPE: Row Layout
                 androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxSize()) {
-                    // Left: Display (50%)
+                    // Left: Display (40%)
                     Display(
                         displayText = displayValue,
                         currentMode = currentMode,
                         onModeClick = { showModeSheet = true },
                         history = history,
                         modifier = Modifier
-                            .weight(1f)
+                            .weight(0.4f)
                             .fillMaxSize()
                     )
                     
-                    // Right: Grid (50%)
-                    gridContent(Modifier.weight(1f))
+                    // Right: Grid (60%)
+                    gridContent(Modifier.weight(0.6f))
                 }
             } else {
                 // PORTRAIT: Column Layout

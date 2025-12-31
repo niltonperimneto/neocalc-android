@@ -36,7 +36,7 @@ fun Display(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding( 15.dp), // Increased padding
+            .padding(16.dp),
     ) {
         // Mode Indicator (Top Center)
         androidx.compose.material3.Surface(
@@ -77,7 +77,8 @@ fun Display(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
-
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 8.dp)
             ) {
                  items(history) { item ->
                      Text(
@@ -92,7 +93,10 @@ fun Display(
             
             Text(
                 text = displayText,
-                style = MaterialTheme.typography.displayLarge, // Use M3 Hero Typography
+                style = MaterialTheme.typography.displayLarge.copy(
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
+                ), // Use M3 Hero Typography with Monospace
                 textAlign = TextAlign.End,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
