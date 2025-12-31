@@ -49,7 +49,7 @@ import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Functions
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-
+import androidx.compose.animation.*
 import kotlinx.coroutines.launch
 import com.neocalc.app.core.CalculatorMode
 import com.neocalc.app.ui.dialogs.AboutDialog
@@ -238,7 +238,7 @@ fun Calculator(
                         targetState = currentMode,
                         transitionSpec = {
                             (androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { height -> height })
-                                .togetherWith(androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutVertically { height -> -height })
+                                .with(androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutVertically { height -> -height })
                         },
                         label = "Grid Transition"
                     ) { targetMode ->

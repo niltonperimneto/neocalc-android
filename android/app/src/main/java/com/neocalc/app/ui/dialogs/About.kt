@@ -33,7 +33,6 @@ import kotlinx.coroutines.launch
 import com.neocalc.app.BuildConfig
 
 @Composable
-@Composable
 fun AboutDialog(
     onDismissRequest: () -> Unit
 ) {
