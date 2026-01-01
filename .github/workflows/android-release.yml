@@ -6,26 +6,26 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
-  build_and_release:
+  # Job 1: Auto-Tagging (Only runs on manual trigger)
+  create_tag:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
+    if: github.event_name == 'workflow_dispatch'
     steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Configure Git
-      run: |
-        git config user.name "GitHub Actions"
-        git config user.email "actions@github.com"
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
 
-    - name: Determine Release Tag
-      id: get_tag
-      run: |
-        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+      - name: Calculate and Push Tag
+        run: |
           echo "Manual trigger detected. Calculating new version..."
           YEAR_MONTH=$(date +'%Y.%m')
           git fetch --tags
@@ -42,89 +42,67 @@ jobs:
           echo "Generated Tag: $NEW_TAG"
           git tag $NEW_TAG
           git push origin $NEW_TAG
-          echo "release_tag=$NEW_TAG" >> $GITHUB_OUTPUT
-        else
-          echo "Tag push detected: ${{ github.ref_name }}"
-          echo "release_tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
-        fi
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v3
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: gradle
+  # Job 2: Build & Release (Only runs when a tag is pushed)
+  build_release:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [] # Independent job
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Set up Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        target: armv7-linux-androideabi
-        override: true
-        components: rustfmt, clippy
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
 
-    - name: Add Rust Targets
-      run: |
-        rustup target add aarch64-linux-android
-        rustup target add armv7-linux-androideabi
-        rustup target add i686-linux-android
-        rustup target add x86_64-linux-android
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android, armv7-linux-androideabi, x86_64-linux-android, i686-linux-android
 
-    - name: Install cargo-ndk
-      run: cargo install cargo-ndk
+      - name: Cache cargo-ndk
+        id: cache-cargo-ndk
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/bin/cargo-ndk
+          key: ${{ runner.os }}-cargo-ndk-3.4.0
 
-    - name: Configure Keystore
-      run: |
-        # Check if secret is present
-        if [ -z "$KEYSTORE_BASE64" ]; then
-          echo "ERROR: KEYSTORE_BASE64 secret is empty or not set!"
-          exit 1
-        fi
-        
-        # Print length of secret for debugging (safe)
-        echo "Secret length: ${#KEYSTORE_BASE64}"
-        
-        # Decode
-        echo "$KEYSTORE_BASE64" > keystore.b64
-        base64 -d -i keystore.b64 > android/app/keystore.jks
-        
-        # Verify file size
-        FILE_SIZE=$(stat -c%s "android/app/keystore.jks")
-        echo "Keystore file size: $FILE_SIZE bytes"
-        
-        if [ "$FILE_SIZE" -eq 0 ]; then
-             echo "ERROR: Keystore file is 0 bytes after decoding."
-             exit 1
-        fi
-      env:
-        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      - name: Install cargo-ndk
+        if: steps.cache-cargo-ndk.outputs.cache-hit != 'true'
+        run: cargo install cargo-ndk
 
-    - name: Verify Keystore
-      run: |
-        keytool -list -v -keystore android/app/keystore.jks -alias "$KEY_ALIAS" -storepass "$KEYSTORE_PASSWORD" -keypass "$KEY_PASSWORD"
-      env:
-        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      - name: Configure Keystore
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "ERROR: KEYSTORE_BASE64 secret is empty!"
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" > keystore.b64
+          base64 -d -i keystore.b64 > android/app/keystore.jks
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
 
-    - name: Grant execute permission for gradlew
-      run: chmod +x android/gradlew
+      - name: Build with Gradle
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease -PappVersion=${{ github.ref_name }}
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
-    - name: Build with Gradle
-      working-directory: android
-      run: ./gradlew assembleRelease --stacktrace -PappVersion=${{ steps.get_tag.outputs.release_tag }}
-      env:
-        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-
-    - name: Release and Upload
-      uses: softprops/action-gh-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ steps.get_tag.outputs.release_tag }}
-        name: Release ${{ steps.get_tag.outputs.release_tag }}
-        files: android/app/build/outputs/apk/release/app-release.apk
-        draft: false
-        prerelease: false
+      - name: Release and Upload
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ github.ref_name }}
+          files: android/app/build/outputs/apk/release/app-release.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
