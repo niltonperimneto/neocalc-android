@@ -238,7 +238,7 @@ fun Calculator(
                         targetState = currentMode,
                         transitionSpec = {
                             (androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { height -> height })
-                                .with(androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutVertically { height -> -height })
+                                .togetherWith(androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutVertically { height -> -height })
                         },
                         label = "Grid Transition"
                     ) { targetMode ->
