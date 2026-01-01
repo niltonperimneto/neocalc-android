@@ -14,6 +14,8 @@ jobs:
   create_tag:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch'
+    outputs:
+      new_tag: ${{ steps.tag_step.outputs.new_tag }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -25,6 +27,7 @@ jobs:
           git config user.email "actions@github.com"
 
       - name: Calculate and Push Tag
+        id: tag_step
         run: |
           echo "Manual trigger detected. Calculating new version..."
           YEAR_MONTH=$(date +'%Y.%m')
@@ -42,12 +45,18 @@ jobs:
           echo "Generated Tag: $NEW_TAG"
           git tag $NEW_TAG
           git push origin $NEW_TAG
+          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
 
-  # Job 2: Build & Release (Only runs when a tag is pushed)
+  # Job 2: Build & Release
+  # Runs if:
+  # 1. It's a tag push (independent run)
+  # 2. OR if create_tag finished successfully (manual run)
   build_release:
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: [] # Independent job
+    needs: create_tag
+    if: |
+      always() && 
+      (needs.create_tag.result == 'success' || (needs.create_tag.result == 'skipped' && startsWith(github.ref, 'refs/tags/v')))
     steps:
       - uses: actions/checkout@v4
         with:
@@ -87,11 +96,22 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
 
+      - name: Define Version
+        id: define_version
+        run: |
+          if [ "${{ needs.create_tag.result }}" == "success" ]; then
+            echo "Using manually created tag: ${{ needs.create_tag.outputs.new_tag }}"
+            echo "version=${{ needs.create_tag.outputs.new_tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "Using git ref tag: ${{ github.ref_name }}"
+            echo "version=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build with Gradle
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease -PappVersion=${{ github.ref_name }}
+          ./gradlew assembleRelease -PappVersion=${{ steps.define_version.outputs.version }}
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
@@ -100,7 +120,8 @@ jobs:
       - name: Release and Upload
         uses: softprops/action-gh-release@v2
         with:
-          name: Release ${{ github.ref_name }}
+          tag_name: ${{ steps.define_version.outputs.version }}
+          name: Release ${{ steps.define_version.outputs.version }}
           files: android/app/build/outputs/apk/release/app-release.apk
           draft: false
           prerelease: false
