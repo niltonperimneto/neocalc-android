@@ -1,0 +1,6 @@
+namespace neocalc_backend {
+    interface Calculator {
+        constructor();
+        string get_buffer();
+    };
+};

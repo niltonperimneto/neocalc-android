@@ -73,14 +73,14 @@ val cargoPath = System.getenv("CARGO_PATH") ?: "${System.getProperty("user.home"
 
 // Task to build the Rust library
 tasks.register<Exec>("buildRustLib") {
-    workingDir = file("../../backend")
+    workingDir = file("../../mobile_backend")
     commandLine(cargoPath, "build", "--lib")
 }
 
 // Task to generate Kotlin bindings, depends on buildRustLib
 tasks.register<Exec>("generateBindings") {
     dependsOn("buildRustLib")
-    workingDir = file("../../backend")
+    workingDir = file("../../mobile_backend")
     commandLine(
         cargoPath, "run", "--bin", "uniffi-bindgen", "generate",
         "--library", "../target/debug/libneocalc_backend.so",
@@ -91,7 +91,7 @@ tasks.register<Exec>("generateBindings") {
 
 // Task to build native libs using cargo-ndk
 tasks.register<Exec>("buildNativeLibs") {
-    workingDir = file("../../backend")
+    workingDir = file("../../mobile_backend")
     // Use cargo-ndk to build for targets and output to jniLibs
     // Ensure cargo-ndk is installed: cargo install cargo-ndk
     commandLine(

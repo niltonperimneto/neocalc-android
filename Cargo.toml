@@ -1,5 +1,6 @@
 [workspace]
 members = [
-    "backend"
-]
+    "backend",
+    "mobile_backend"
+, "mobile_backend"]
 resolver = "2"
