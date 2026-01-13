@@ -199,12 +199,7 @@ fun Calculator(
             }
         }
     ) {
-        val showThemeDialog by viewModel.showThemeDialog.collectAsState()
-        if (showThemeDialog) {
-            com.neocalc.app.ui.dialogs.ThemeDialog {
-                viewModel.showThemeDialog.value = false
-            }
-        }
+
 
         Scaffold(
             modifier = Modifier.fillMaxSize(),
@@ -217,17 +212,12 @@ fun Calculator(
                     verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                     horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween
                 ) {
-                    // Theme Switcher (Brush Icon)
-                    IconButton(onClick = { viewModel.showThemeDialog.value = true }) {
-                        Icon(Icons.Default.Brush, contentDescription = "Themes")
-                    }
-                    
-                    // Settings (Settings Icon)
+                    // Settings (Settings Icon: Left)
                     IconButton(onClick = { showSettings = true }) {
                          Icon(Icons.Filled.Settings, contentDescription = "Settings")
                     }
 
-                    // About (Info Icon)
+                    // About (Info Icon: Right)
                     IconButton(onClick = { showAbout = true }) {
                         Icon(Icons.Filled.Info, contentDescription = "About")
                     }

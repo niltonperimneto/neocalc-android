@@ -1,16 +1,66 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
-    android:viewportWidth="512"
-    android:viewportHeight="512">
-    <!-- N Path from logo.svg, scaled down to fits in safe zone -->
-    <group
-        android:pivotX="256"
-        android:pivotY="256"
-        android:scaleX="0.65"
-        android:scaleY="0.65">
+    android:viewportWidth="256"
+    android:viewportHeight="256">
+    
+    <group android:translateX="48" android:translateY="48">
+        <!-- g7: Left segments -->
         <path
-            android:fillColor="#1a5fb4"
-            android:pathData="M 120,400 V 120 l 80,-16 68,96 11,17 14,23 14,23 -9,23 -1.5,-34 -1,-37 -0.2,-29 V 85 l 78,-15 v 279 l -79,16 -63,-89 -14,-20 -18,-28 -19,-32 15,-7.5 2,38 0.7,33 0.2,23 v 102 z" />
+            android:fillColor="#FFFFFF"
+            android:pathData="M 1.469,117.327 h 45.062 a 10.967,10.967 0 0 1 10.967,10.967 v 18.918 a 10.967,10.967 0 0 1 -10.967,10.967 h -45.062 a 10.967,10.967 0 0 1 -10.967,-10.967 v -18.918 a 10.967,10.967 0 0 1 10.967,-10.967 z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M 1.469,59.574 h 45.062 a 10.967,10.967 0 0 1 10.967,10.967 v 18.918 a 10.967,10.967 0 0 1 -10.967,10.967 h -45.062 a 10.967,10.967 0 0 1 -10.967,-10.967 v -18.918 a 10.967,10.967 0 0 1 10.967,-10.967 z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M 3.293,1.821 h 45.062 a 10.967,10.967 0 0 1 10.967,10.967 v 18.918 a 10.967,10.967 0 0 1 -10.967,10.967 h -45.062 a 10.967,10.967 0 0 1 -10.967,-10.967 v -18.918 a 10.967,10.967 0 0 1 10.967,-10.967 z" />
+
+        <!-- Screen-Column -->
+        <group android:translateX="112">
+            <path
+                android:fillColor="#FFFFFF"
+                android:pathData="M 16,0 h 16 a 16,16 0 0 1 16,16 v 128 a 16,16 0 0 1 -16,16 h -16 a 16,16 0 0 1 -16,-16 v -128 a 16,16 0 0 1 16,-16 z" />
+            
+            <group android:translateX="12" android:translateY="68">
+                <!-- rect5 -->
+                <path
+                    android:pathData="M 3,0 h 18 a 3,3 0 0 1 3,3 v 0 a 3,3 0 0 1 -3,3 h -18 a 3,3 0 0 1 -3,-3 v -0 a 3,3 0 0 1 3,-3 z">
+                    <aapt:attr name="android:fillColor">
+                        <gradient
+                            android:startX="2.4"
+                            android:startY="0"
+                            android:endX="21.6"
+                            android:endY="6"
+                            android:type="linear">
+                            <item android:offset="0.0" android:color="#00ECBC"/>
+                            <item android:offset="1.0" android:color="#007ADF"/>
+                        </gradient>
+                    </aapt:attr>
+                </path>
+                <!-- rect6 -->
+                <path
+                    android:pathData="M 3,14 h 18 a 3,3 0 0 1 3,3 v 0 a 3,3 0 0 1 -3,3 h -18 a 3,3 0 0 1 -3,-3 v -0 a 3,3 0 0 1 3,-3 z">
+                    <aapt:attr name="android:fillColor">
+                        <gradient
+                            android:startX="2.4"
+                            android:startY="0"
+                            android:endX="21.6"
+                            android:endY="6"
+                            android:type="linear">
+                            <item android:offset="0.0" android:color="#00ECBC"/>
+                            <item android:offset="1.0" android:color="#007ADF"/>
+                        </gradient>
+                    </aapt:attr>
+                </path>
+            </group>
+        </group>
+
+        <!-- Diagonal Link -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M 57.064099,6.7966286 154.94493,141.47385 c 3.8515,5.29949 2.54689,12.62194 -2.89726,16.3711 -5.44416,3.74918 -12.96644,2.47923 -16.81794,-2.8203 L 37.348892,20.347457 C 33.497383,15.047941 34.802006,7.7255171 40.24616,3.9763337 45.690316,0.22715132 53.212591,1.4971145 57.064099,6.7966286 Z" />
     </group>
+
 </vector>
