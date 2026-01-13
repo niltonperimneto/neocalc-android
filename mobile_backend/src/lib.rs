@@ -142,3 +142,37 @@ impl Calculator {
         state.show_fractions = enabled;
     }
 }
+
+#[uniffi::export]
+pub fn parse_theme_css(css: String) -> std::collections::HashMap<String, i64> {
+    let mut map = std::collections::HashMap::new();
+    for line in css.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("@define-color") {
+            let parts: Vec<&str> = trimmed.split_whitespace().collect();
+            if parts.len() >= 3 {
+                let key = parts[1];
+                let value_str = parts[2].trim_end_matches(';');
+                if let Ok(color) = parse_color(value_str) {
+                    map.insert(key.to_string(), color);
+                }
+            }
+        }
+    }
+    map
+}
+
+fn parse_color(hex_str: &str) -> Result<i64, ()> {
+    let clean_hex = hex_str.trim_start_matches('#');
+    let val = i64::from_str_radix(clean_hex, 16).map_err(|_| ())?;
+    // Ensure full opacity if valid hex
+    if clean_hex.len() == 6 {
+        Ok(val | 0xFF000000)
+    } else if clean_hex.len() == 8 {
+        // Rust i64 from hex might interpret as positive, but ARGB can be negative if cast directly?
+        // Kotlin expects Color(Long). 0xFF... is a large positive Long.
+        Ok(val)
+    } else {
+        Err(())
+    }
+}

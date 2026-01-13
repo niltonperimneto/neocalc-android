@@ -1,6 +1,17 @@
 namespace neocalc_backend {
     interface Calculator {
         constructor();
+        string input(string text);
+        string clear();
+        string backspace();
+        string evaluate(string? input_arg);
         string get_buffer();
+        sequence<string> get_history();
+        string convert_to_hex();
+        string convert_to_bin();
+        void set_fraction_display(boolean enabled);
     };
+
+    [Throws=CalculatorError]
+    record<string, i64> parse_theme_css(string css);
 };

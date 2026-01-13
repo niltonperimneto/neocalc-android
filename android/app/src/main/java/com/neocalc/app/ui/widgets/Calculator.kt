@@ -18,6 +18,7 @@ import com.neocalc.app.ui.grids.StandardGrid
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -223,7 +224,7 @@ fun Calculator(
                     
                     // Settings (Settings Icon)
                     IconButton(onClick = { showSettings = true }) {
-                         Icon(androidx.compose.material.icons.filled.Settings, contentDescription = "Settings")
+                         Icon(Icons.Filled.Settings, contentDescription = "Settings")
                     }
 
                     // About (Info Icon)
