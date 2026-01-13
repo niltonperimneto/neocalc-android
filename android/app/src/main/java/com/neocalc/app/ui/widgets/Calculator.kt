@@ -47,6 +47,7 @@ import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Functions
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.animation.*
@@ -72,6 +73,17 @@ fun Calculator(
     val displayValue by viewModel.displayValue.collectAsState()
     
     var showAbout by remember { mutableStateOf(false) }
+    var showSettings by remember { mutableStateOf(false) }
+    
+    val showFractions by viewModel.showFractions.collectAsState()
+
+    if (showSettings) {
+        com.neocalc.app.ui.dialogs.SettingsDialog(
+            showFractions = showFractions,
+            onToggleFractions = { viewModel.setFractionDisplay(it) },
+            onDismiss = { showSettings = false }
+        )
+    }
     
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -207,6 +219,11 @@ fun Calculator(
                     // Theme Switcher (Brush Icon)
                     IconButton(onClick = { viewModel.showThemeDialog.value = true }) {
                         Icon(Icons.Default.Brush, contentDescription = "Themes")
+                    }
+                    
+                    // Settings (Settings Icon)
+                    IconButton(onClick = { showSettings = true }) {
+                         Icon(androidx.compose.material.icons.filled.Settings, contentDescription = "Settings")
                     }
 
                     // About (Info Icon)

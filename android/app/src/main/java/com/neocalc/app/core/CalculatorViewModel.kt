@@ -30,8 +30,26 @@ class CalculatorViewModel : ViewModel() {
     private val _history = MutableStateFlow<List<String>>(emptyList())
     val history: StateFlow<List<String>> = _history.asStateFlow()
 
-    // UI State for Dialogs
+    // Theme Dialog State
     val showThemeDialog = MutableStateFlow(false)
+
+    // Settings State
+    private val _showFractions = MutableStateFlow(false)
+    val showFractions: StateFlow<Boolean> = _showFractions.asStateFlow()
+
+    fun setFractionDisplay(enabled: Boolean) {
+        viewModelScope.launch {
+            _showFractions.value = enabled
+            // Update all active sessions settings (or just current, but usually settings are global)
+            _sessions.value.forEach { session ->
+                 try {
+                     session.calculator.setFractionDisplay(enabled)
+                 } catch (e: Exception) {
+                     android.util.Log.e("CalculatorViewModel", "Error setting fraction display", e)
+                 }
+            }
+        }
+    }
 
     // Expose current mode dynamically via stable StateFlow
     private val _mode = MutableStateFlow(CalculatorMode.STANDARD)
@@ -50,6 +68,11 @@ class CalculatorViewModel : ViewModel() {
             name = "Calc ${(_sessions.value.size + 1)}",
             calculator = Calculator()
         )
+        // Apply current settings to new session
+        try {
+            newSession.calculator.setFractionDisplay(_showFractions.value)
+        } catch (e: Exception) { /* ignore */ }
+
         _sessions.value = _sessions.value + newSession
         switchToSession(newSession)
     }

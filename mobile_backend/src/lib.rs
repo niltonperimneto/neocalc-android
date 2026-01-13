@@ -1,9 +1,12 @@
 uniffi::setup_scaffolding!();
 
+use num_traits::cast::ToPrimitive;
+
 struct CalculatorState {
     context: neocalc_core::Context,
     buffer: String,
     history: Vec<String>,
+    show_fractions: bool,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -26,6 +29,7 @@ impl Calculator {
                 context: neocalc_core::Context::new(),
                 buffer: String::from("0"),
                 history: Vec::new(),
+                show_fractions: false,
             }),
         }
     }
@@ -65,7 +69,23 @@ impl Calculator {
 
         match neocalc_core::evaluate(&expr, &mut state.context) {
             Ok(num) => {
-                let result_str = neocalc_core::utils::format_number(num);
+                let result_str = if state.show_fractions {
+                    neocalc_core::utils::format_number(num)
+                } else {
+                    match num {
+                        neocalc_core::engine::types::Number::Rational(r) => {
+                            if let Some(f) = r.to_f64() {
+                                neocalc_core::utils::format_float(f)
+                            } else {
+                                neocalc_core::utils::format_number(
+                                    neocalc_core::engine::types::Number::Rational(r),
+                                )
+                            }
+                        }
+                        _ => neocalc_core::utils::format_number(num),
+                    }
+                };
+
                 if let Some(last) = state.history.last_mut() {
                     *last = format!("{} = {}", expr, result_str);
                 }
@@ -115,5 +135,10 @@ impl Calculator {
             }
             _ => "Not an integer".to_string(),
         }
+    }
+
+    pub fn set_fraction_display(&self, enabled: bool) {
+        let mut state = self.state.lock().unwrap();
+        state.show_fractions = enabled;
     }
 }

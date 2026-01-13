@@ -5,7 +5,8 @@ Originally created as a simple calculator to teach kids how to program. It was s
 But then **I** came along. I saw a perfectly functional teaching tool and thought, "You know what this needs? Unnecessary complexity and a bad attitude." So I forked it, injected it with Rust, and stripped it of its innocence.
 
 ## Features
-*   **Rust Backend**: Because Java wasn't complicated enough.
+*   **Rust Backend**: Powered by `neocalc-core` via UniFFI for high performance and safety.
+*   **Fraction Support**: Toggle between precise fractional (e.g., `1/2`) and decimal (e.g., `0.5`) outputs in Settings.
 *   **4 Calculator Modes**: Standard, Scientific, Programming, and Financial.
 *   **Responsive Layout**: Works in Portrait and Landscape (Split View).
 *   **Theming Engine**: Import your own `.css` themes (GTK-compatible).
@@ -101,7 +102,12 @@ The theme parser looks for specific `@define-color` lines.
 *   **JDK 17**
 
 ### Build Commands
-The build process automatically compiles the Rust backend and generates Kotlin bindings.
+Ensure you have initialized the submodules before building:
+```bash
+git submodule update --init --recursive
+```
+
+The build process automatically compiles the Rust backend (via the `mobile_backend` wrapper crate) and generates Kotlin bindings.
 
 ```bash
 cd android
