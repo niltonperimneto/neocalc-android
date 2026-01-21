@@ -26,6 +26,8 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.InstallMobile
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -82,23 +84,28 @@ fun AboutDialog(
                 AboutActionRow(
                     icon = when (updateStatus) {
                         is com.neocalc.app.utils.UpdateStatus.Loading -> null // Spinner
+                        is com.neocalc.app.utils.UpdateStatus.Downloading -> null // Spinner
                         is com.neocalc.app.utils.UpdateStatus.Available -> androidx.compose.material.icons.Icons.Default.CloudDownload
+                        is com.neocalc.app.utils.UpdateStatus.Downloaded -> androidx.compose.material.icons.Icons.Default.InstallMobile
                         is com.neocalc.app.utils.UpdateStatus.UpToDate -> androidx.compose.material.icons.Icons.Default.CheckCircle
                         is com.neocalc.app.utils.UpdateStatus.Error -> androidx.compose.material.icons.Icons.Default.Warning
                         else -> androidx.compose.material.icons.Icons.Default.SystemUpdate
                     },
-                    isLoading = updateStatus is com.neocalc.app.utils.UpdateStatus.Loading,
+                    isLoading = updateStatus is com.neocalc.app.utils.UpdateStatus.Loading || updateStatus is com.neocalc.app.utils.UpdateStatus.Downloading,
                     title = "Updates",
                     subtitle = when (val s = updateStatus) {
                         is com.neocalc.app.utils.UpdateStatus.Idle -> "Check for updates"
                         is com.neocalc.app.utils.UpdateStatus.Loading -> "Checking..."
-                        is com.neocalc.app.utils.UpdateStatus.Available -> "Version ${s.version} available"
+                        is com.neocalc.app.utils.UpdateStatus.Available -> "Tap to download ${s.version}"
+                        is com.neocalc.app.utils.UpdateStatus.Downloading -> "Downloading... ${s.progress}%"
+                        is com.neocalc.app.utils.UpdateStatus.Downloaded -> "Tap to install ${s.version}"
                         is com.neocalc.app.utils.UpdateStatus.UpToDate -> "Up to date"
-                        is com.neocalc.app.utils.UpdateStatus.Error -> "Connection failed"
+                        is com.neocalc.app.utils.UpdateStatus.Error -> s.message
                         else -> ""
                     },
                     iconTint = when(updateStatus) {
                          is com.neocalc.app.utils.UpdateStatus.Available -> androidx.compose.material3.MaterialTheme.colorScheme.primary
+                         is com.neocalc.app.utils.UpdateStatus.Downloaded -> androidx.compose.material3.MaterialTheme.colorScheme.primary
                          is com.neocalc.app.utils.UpdateStatus.UpToDate -> androidx.compose.material3.MaterialTheme.colorScheme.tertiary
                          is com.neocalc.app.utils.UpdateStatus.Error -> androidx.compose.material3.MaterialTheme.colorScheme.error
                          else -> androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
@@ -106,8 +113,25 @@ fun AboutDialog(
                     onClick = {
                         when (val s = updateStatus) {
                              is com.neocalc.app.utils.UpdateStatus.Available -> {
-                                 val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(s.downloadUrl))
-                                 context.startActivity(intent)
+                                 // Start download
+                                 scope.launch {
+                                     updateStatus = com.neocalc.app.utils.UpdateStatus.Downloading(0, s.version)
+                                     updateStatus = com.neocalc.app.utils.UpdateManager.downloadApk(
+                                         context = context,
+                                         downloadUrl = s.apkDownloadUrl,
+                                         version = s.version,
+                                         onProgress = { progress ->
+                                             updateStatus = com.neocalc.app.utils.UpdateStatus.Downloading(progress, s.version)
+                                         }
+                                     )
+                                 }
+                             }
+                             is com.neocalc.app.utils.UpdateStatus.Downloaded -> {
+                                 // Install APK
+                                 com.neocalc.app.utils.UpdateManager.installApk(context, s.apkFile)
+                             }
+                             is com.neocalc.app.utils.UpdateStatus.Downloading -> {
+                                 // Already downloading, do nothing
                              }
                              else -> {
                                  updateStatus = com.neocalc.app.utils.UpdateStatus.Loading
