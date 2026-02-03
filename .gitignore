@@ -15,6 +15,7 @@ captures/
 *.ap_
 *.dex
 .navigation/
+.settings/
 
 # Generated Native Libs
 android/app/src/main/jniLibs/
