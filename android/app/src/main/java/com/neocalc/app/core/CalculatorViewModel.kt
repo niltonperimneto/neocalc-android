@@ -30,8 +30,7 @@ class CalculatorViewModel : ViewModel() {
     private val _history = MutableStateFlow<List<String>>(emptyList())
     val history: StateFlow<List<String>> = _history.asStateFlow()
 
-    // Theme Dialog State
-    val showThemeDialog = MutableStateFlow(false)
+
 
     // Settings State
     private val _showFractions = MutableStateFlow(false)
@@ -112,6 +111,39 @@ class CalculatorViewModel : ViewModel() {
 
     fun setMode(newMode: CalculatorMode) {
         _currentSession.value?.mode?.value = newMode
+    }
+
+    /**
+     * Cycle through modes (for swipe gestures).
+     * @param forward If true, cycle forward; if false, cycle backward.
+     */
+    fun cycleMode(forward: Boolean) {
+        val modes = CalculatorMode.entries
+        val current = _mode.value
+        val currentIndex = modes.indexOf(current)
+        val newIndex = if (forward) {
+            (currentIndex + 1) % modes.size
+        } else {
+            (currentIndex - 1 + modes.size) % modes.size
+        }
+        setMode(modes[newIndex])
+    }
+
+    /**
+     * Insert a history item value into the current buffer.
+     */
+    fun insertHistoryItem(item: String) {
+        viewModelScope.launch {
+            try {
+                _currentSession.value?.let { session ->
+                    // Extract the result from history item (format: "expression = result")
+                    val result = item.substringAfterLast("=").trim()
+                    _displayValue.value = session.calculator.input(result)
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("CalculatorViewModel", "Error inserting history item", e)
+            }
+        }
     }
 
     fun input(text: String) {

@@ -70,7 +70,7 @@ impl Calculator {
         match neocalc_core::evaluate(&expr, &mut state.context) {
             Ok(num) => {
                 let result_str = if state.show_fractions {
-                    neocalc_core::utils::format_number(num)
+                    neocalc_core::utils::format_number(num, false)
                 } else {
                     match num {
                         neocalc_core::engine::types::Number::Rational(r) => {
@@ -79,10 +79,11 @@ impl Calculator {
                             } else {
                                 neocalc_core::utils::format_number(
                                     neocalc_core::engine::types::Number::Rational(r),
+                                    true,
                                 )
                             }
                         }
-                        _ => neocalc_core::utils::format_number(num),
+                        _ => neocalc_core::utils::format_number(num, true),
                     }
                 };
 

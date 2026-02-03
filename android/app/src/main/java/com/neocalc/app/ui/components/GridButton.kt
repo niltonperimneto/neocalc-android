@@ -2,18 +2,22 @@ package com.neocalc.app.ui.components
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import com.neocalc.app.ui.style.Spacing
 
 
 enum class ButtonType {
@@ -48,24 +52,25 @@ fun GridButton(
         else -> MaterialTheme.colorScheme.onSecondaryContainer
     }
 
-    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val haptic = LocalHapticFeedback.current
 
     Button(
         onClick = {
-            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress) // or TextHandleMove/VirtualKey
+            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) // Light click
             onClick()
         },
         colors = ButtonDefaults.buttonColors(
             containerColor = containerColor,
             contentColor = contentColor
         ),
-        // Rounded shape for modern look
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp), 
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
+        // M3 shape from MaterialTheme
+        shape = MaterialTheme.shapes.medium,
+        // Removed explicit elevation for tonal M3 approach (color conveys hierarchy)
         modifier = modifier
-            .padding(2.dp) // Compact padding
+            .padding(Spacing.buttonGap)
             .fillMaxSize()
-            .then(if (useAspectRatio) Modifier.aspectRatio(1.6f) else Modifier) 
+            .then(if (useAspectRatio) Modifier.aspectRatio(1.6f) else Modifier)
+            .semantics { role = Role.Button }
     ) {
         if (imageVector != null) {
             Icon(
@@ -74,18 +79,17 @@ fun GridButton(
                 modifier = Modifier.fillMaxSize(0.5f)
             )
         } else {
-            // Text Scaling Logic
+            // M3 Typography scale based on text length
             val displayText = text ?: ""
-            val fontSize = when {
-                displayText.length > 6 -> 10.sp
-                displayText.length > 4 -> 12.sp
-                displayText.length > 2 -> 16.sp
-                else -> 20.sp
+            val textStyle = when {
+                displayText.length > 4 -> MaterialTheme.typography.labelSmall
+                displayText.length > 2 -> MaterialTheme.typography.labelMedium
+                else -> MaterialTheme.typography.labelLarge
             }
             
             Text(
                 text = displayText,
-                style = MaterialTheme.typography.titleLarge.copy(fontSize = fontSize),
+                style = textStyle,
                 maxLines = 1,
                 softWrap = false
             )
