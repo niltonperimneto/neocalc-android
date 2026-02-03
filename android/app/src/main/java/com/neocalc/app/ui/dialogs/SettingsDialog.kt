@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -21,6 +20,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,6 +28,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.neocalc.app.ui.theme.ThemeManager
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material.icons.filled.HelpOutline
 
 @Composable
 fun SettingsDialog(
@@ -48,6 +50,12 @@ fun SettingsDialog(
                 ThemeManager.importTheme(context, it)
             }
         }
+    }
+
+    var showTutorial by remember { mutableStateOf(false) }
+    
+    if (showTutorial) {
+        TutorialDialog(onDismiss = { showTutorial = false })
     }
 
     AlertDialog(
@@ -122,7 +130,7 @@ fun SettingsDialog(
                             }
                         )
                         Text(
-                            text = themeName.replace("-", " ").capitalize(),
+                            text = themeName.replace("-", " ").replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.ROOT) else it.toString() },
                             modifier = Modifier.padding(start = 8.dp)
                         )
                     }
@@ -143,6 +151,34 @@ fun SettingsDialog(
                         Text("Import Theme")
                     }
                 }
+                
+                item {
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+                }
+                
+                // Section: Help
+                item {
+                    Text(
+                        text = "Help",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                }
+                
+                item {
+                    TextButton(
+                        onClick = { showTutorial = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.HelpOutline,
+                            contentDescription = null,
+                            modifier = Modifier.padding(end = 6.dp).size(18.dp)
+                        )
+                        Text("Help & Tutorial")
+                    }
+                }
             }
         },
         confirmButton = {
@@ -153,6 +189,4 @@ fun SettingsDialog(
     )
 }
 
-private fun String.capitalize(): String {
-    return this.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() }
-}
+

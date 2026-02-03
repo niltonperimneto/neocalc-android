@@ -13,20 +13,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import coil.ImageLoader
+
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
+
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Download
+
 import androidx.compose.material.icons.filled.InstallMobile
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.runtime.getValue
