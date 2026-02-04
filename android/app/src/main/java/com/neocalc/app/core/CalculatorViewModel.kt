@@ -82,7 +82,8 @@ class CalculatorViewModel : ViewModel() {
         // Sync display and history and mode
         viewModelScope.launch {
             _displayValue.value = session.calculator.getBuffer()
-            _history.value = session.calculator.getHistory()
+            // Use legacy string format for backward compatibility
+            _history.value = session.calculator.getHistoryStrings()
         }
         
         // Sync Mode: Cancel previous collector and start new one
@@ -187,7 +188,7 @@ class CalculatorViewModel : ViewModel() {
             try {
                 // Evaluate current state
                  _currentSession.value?.let { session ->
-                    _displayValue.value = session.calculator.evaluate(null)
+                    _displayValue.value = session.calculator.evaluate()
                     updateHistory()
                  }
             } catch (e: Exception) {
@@ -225,7 +226,8 @@ class CalculatorViewModel : ViewModel() {
          viewModelScope.launch {
             try {
                  _currentSession.value?.let { session ->
-                    _history.value = session.calculator.getHistory()
+                    // Use legacy string format for backward compatibility
+                    _history.value = session.calculator.getHistoryStrings()
                  }
             } catch (e: Exception) {
                 android.util.Log.e("CalculatorViewModel", "Error updating history", e)
