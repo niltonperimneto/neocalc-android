@@ -433,10 +433,8 @@ dependencies = [
 name = "neocalc_backend"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "neocalc-core",
  "num-traits",
- "once_cell",
  "thiserror",
  "uniffi",
 ]

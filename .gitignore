@@ -52,6 +52,7 @@ Thumbs.db
 # Logs
 build_log.txt
 *.log
+*.txt
 
 # Editor Backups
 *.swp
