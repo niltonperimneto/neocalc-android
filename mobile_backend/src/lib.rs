@@ -1,6 +1,16 @@
 uniffi::setup_scaffolding!();
 
+mod update;
+pub use update::{check_for_updates, download_apk, DownloadResult, UpdateCheckResult};
+
+mod formatting;
+pub use formatting::{format_for_display, NumberLocale};
+
+mod storage;
+pub use storage::{load_sessions, save_sessions, LoadResult, PersistedSession, StorageResult};
+
 use num_traits::cast::ToPrimitive;
+use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Maximum number of history items to keep (prevents unbounded memory growth)
@@ -10,7 +20,7 @@ const MAX_HISTORY_SIZE: usize = 100;
 const OPERATORS: &[char] = &['+', '-', '*', '/', '^', '%'];
 
 /// Structured history item for cleaner UI consumption
-#[derive(uniffi::Record, Clone)]
+#[derive(uniffi::Record, Clone, Debug, Serialize, Deserialize)]
 pub struct HistoryItem {
     pub expression: String,
     pub result: String,
