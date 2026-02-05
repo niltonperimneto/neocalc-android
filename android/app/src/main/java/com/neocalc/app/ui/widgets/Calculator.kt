@@ -209,7 +209,6 @@ fun Calculator(
                         gridContent(Modifier.weight(LayoutWeights.gridPortrait))
                     }
                 }
-                }
             }
         }
     }

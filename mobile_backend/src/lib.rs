@@ -9,6 +9,9 @@ pub use formatting::{format_for_display, NumberLocale};
 mod storage;
 pub use storage::{load_sessions, save_sessions, LoadResult, PersistedSession, StorageResult};
 
+mod session_wrapper;
+pub use session_wrapper::{MobileSessionManager, MobileSessionOverview};
+
 use num_traits::cast::ToPrimitive;
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
