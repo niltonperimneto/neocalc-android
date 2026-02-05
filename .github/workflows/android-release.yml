@@ -134,8 +134,8 @@ jobs:
           
           # 4. Sign the Checksum file
           # -S: sign, -m: message text, -s: secret key file, -x: signature output file
-          # Assuming passwordless key for now, or use -p if needed
-          minisign -S -m SHA256SUMS.txt -s minisign.key -x SHA256SUMS.txt.minisig
+          # Read password from stdin to avoid interactive prompt
+          echo "${{ secrets.MINISIGN_PASSWORD }}" | minisign -S -m SHA256SUMS.txt -s minisign.key -x SHA256SUMS.txt.minisig
           
           # 5. Clean up secret
           rm minisign.key
