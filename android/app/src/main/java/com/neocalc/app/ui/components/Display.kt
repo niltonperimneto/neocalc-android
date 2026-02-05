@@ -135,8 +135,12 @@ fun Display(
                  }
             }
             
+            val formattedText = androidx.compose.runtime.remember(displayText) {
+                NumberFormatter.format(displayText)
+            }
+            
             Text(
-                text = NumberFormatter.format(displayText),
+                text = formattedText,
                 style = MaterialTheme.typography.displayMedium.copy(
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Medium

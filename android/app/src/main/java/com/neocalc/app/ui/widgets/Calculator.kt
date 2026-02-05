@@ -186,8 +186,8 @@ fun Calculator(
                             displayText = uiState.displayValue,
                             currentMode = uiState.currentMode,
                             onModeClick = { showModeSheet = true },
-                            history = historyStrings,
-                            onHistoryItemClick = { viewModel.insertHistoryItem(it) },
+                            history = uiState.history,
+                            onHistoryItemClick = { viewModel.insertHistoryItem("${it.expression} = ${it.result}") },
                             modifier = Modifier
                                 .weight(LayoutWeights.displayLandscape)
                                 .fillMaxSize()
@@ -196,13 +196,12 @@ fun Calculator(
                         gridContent(Modifier.weight(LayoutWeights.gridLandscape))
                     }
                 } else {
-                    Column(modifier = Modifier.fillMaxSize()) {
                         Display(
                             displayText = uiState.displayValue,
                             currentMode = uiState.currentMode,
                             onModeClick = { showModeSheet = true },
-                            history = historyStrings,
-                            onHistoryItemClick = { viewModel.insertHistoryItem(it) },
+                            history = uiState.history,
+                            onHistoryItemClick = { viewModel.insertHistoryItem("${it.expression} = ${it.result}") },
                             modifier = Modifier.weight(LayoutWeights.displayPortrait)
                         )
                         
