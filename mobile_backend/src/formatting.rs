@@ -119,19 +119,19 @@ pub fn format_for_display(input: String, locale: NumberLocale) -> String {
 
 /// Add thousands separators to an integer string
 fn add_thousands_separator(integer: &str, separator: char) -> String {
-    let chars: Vec<char> = integer.chars().collect();
-    let len = chars.len();
+    // Input is already validated as ascii digits, so len() in bytes == len() in chars
+    let len = integer.len();
 
     if len <= 3 {
         return integer.to_string();
     }
 
     let mut result = String::with_capacity(len + len / 3);
-    for (i, c) in chars.iter().enumerate() {
+    for (i, c) in integer.chars().enumerate() {
         if i > 0 && (len - i) % 3 == 0 {
             result.push(separator);
         }
-        result.push(*c);
+        result.push(c);
     }
 
     result

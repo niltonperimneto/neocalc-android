@@ -26,6 +26,8 @@ const MAX_HISTORY_SIZE: usize = 100;
 /// Characters that are considered operators
 const OPERATORS: &[char] = &['+', '-', '*', '/', '^', '%'];
 
+use std::collections::VecDeque;
+
 /// Structured history item for cleaner UI consumption
 #[derive(uniffi::Record, Clone, Debug, Serialize, Deserialize)]
 pub struct HistoryItem {
@@ -38,7 +40,7 @@ pub struct HistoryItem {
 struct CalculatorState {
     context: neocalc_core::Context,
     buffer: String,
-    history: Vec<HistoryItem>,
+    history: VecDeque<HistoryItem>,
     last_result: Option<String>,
     show_fractions: bool,
 }
@@ -69,7 +71,7 @@ impl Calculator {
             state: std::sync::Mutex::new(CalculatorState {
                 context: neocalc_core::Context::new(),
                 buffer: String::from("0"),
-                history: Vec::new(),
+                history: VecDeque::new(),
                 last_result: None,
                 show_fractions: false,
             }),
@@ -179,7 +181,7 @@ impl Calculator {
                 };
 
                 // Add structured history item
-                state.history.push(HistoryItem {
+                state.history.push_back(HistoryItem {
                     expression: expr.clone(),
                     result: result_str.clone(),
                     timestamp,
@@ -188,7 +190,7 @@ impl Calculator {
 
                 // Trim history to max size
                 if state.history.len() > MAX_HISTORY_SIZE {
-                    state.history.remove(0);
+                    state.history.pop_front();
                 }
 
                 // Store last result for ANS functionality
@@ -200,7 +202,7 @@ impl Calculator {
                 let err_msg = format!("{:?}", e);
 
                 // Add error to history
-                state.history.push(HistoryItem {
+                state.history.push_back(HistoryItem {
                     expression: expr,
                     result: err_msg.clone(),
                     timestamp,
@@ -209,7 +211,7 @@ impl Calculator {
 
                 // Trim history to max size
                 if state.history.len() > MAX_HISTORY_SIZE {
-                    state.history.remove(0);
+                    state.history.pop_front();
                 }
 
                 state.buffer = String::from("0");
@@ -225,7 +227,7 @@ impl Calculator {
 
     /// Returns structured history items
     pub fn get_history(&self) -> Vec<HistoryItem> {
-        self.state.lock().unwrap().history.clone()
+        self.state.lock().unwrap().history.iter().cloned().collect()
     }
 
     /// Returns history as legacy string format for backward compatibility
