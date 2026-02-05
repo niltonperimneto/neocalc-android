@@ -64,3 +64,4 @@ android/app/release/baselineProfiles/0/app-release.dm
 
 *.jks
 keystore_base64.txt
+minisign.key
