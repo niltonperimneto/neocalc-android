@@ -10,7 +10,6 @@ name = "neocalc_backend"
 [dependencies]
 uniffi = { version = "0.30.0", features = ["cli"] }
 neocalc-core = { path = "../backend" }
-thiserror = "2.0"
 num-traits = "0.2"
 
 # Update module dependencies
