@@ -821,6 +821,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 
 [[package]]
+name = "minisign-verify"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e856fdd13623a2f5f2f54676a4ee49502a96a80ef4a62bcedd23d52427c44d43"
+
+[[package]]
 name = "mio"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -856,9 +862,11 @@ dependencies = [
 name = "neocalc_backend"
 version = "0.1.0"
 dependencies = [
+ "minisign-verify",
  "neocalc-core",
  "num-traits",
  "reqwest",
+ "semver",
  "serde",
  "serde_json",
  "sha2",
