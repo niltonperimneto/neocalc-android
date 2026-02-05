@@ -12,6 +12,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.neocalc.app.R
 import com.neocalc.app.ui.style.Spacing
 
 @Composable
@@ -21,71 +23,57 @@ fun TutorialDialog(onDismiss: () -> Unit) {
         titleContentColor = MaterialTheme.colorScheme.onSurface,
         textContentColor = MaterialTheme.colorScheme.onSurface,
         onDismissRequest = onDismiss,
-        title = { Text("Help & Tutorial") },
+        title = { Text(stringResource(R.string.tutorial_title)) },
         text = {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
             ) {
-                // Section: Basic Usage
                 TutorialSection(
-                    title = "Basic Usage",
-                    content = "Enter numbers and operators to create expressions. " +
-                            "Press '=' to evaluate. Use 'C' to clear and '⌫' to delete."
+                    title = stringResource(R.string.tutorial_section_basic),
+                    content = stringResource(R.string.tutorial_basic_content)
                 )
                 
                 HorizontalDivider(modifier = Modifier.padding(vertical = Spacing.sm))
                 
-                // Section: Calculator Modes
                 TutorialSection(
-                    title = "Calculator Modes",
-                    content = "NeoCalc offers 4 modes:\n" +
-                            "• Standard: Basic arithmetic\n" +
-                            "• Scientific: sin, cos, log, sqrt, etc.\n" +
-                            "• Programming: Hex, Binary, Bitwise ops\n" +
-                            "• Financial: Interest, loan calculations"
+                    title = stringResource(R.string.tutorial_section_modes),
+                    content = stringResource(R.string.tutorial_modes_content)
                 )
                 
                 HorizontalDivider(modifier = Modifier.padding(vertical = Spacing.sm))
                 
-                // Section: Gestures
                 TutorialSection(
-                    title = "Gestures",
-                    content = "• Swipe Left/Right on the keypad to switch between modes.\n" +
-                            "• Tap the mode chip at the top to open the mode picker."
+                    title = stringResource(R.string.tutorial_section_gestures),
+                    content = stringResource(R.string.tutorial_gestures_content)
                 )
                 
                 HorizontalDivider(modifier = Modifier.padding(vertical = Spacing.sm))
                 
-                // Section: History
                 TutorialSection(
-                    title = "History",
-                    content = "• Tap a history entry to insert its result into the input.\n" +
-                            "• Long-press a history entry to copy it to the clipboard."
+                    title = stringResource(R.string.tutorial_section_history),
+                    content = stringResource(R.string.tutorial_history_content)
                 )
                 
                 HorizontalDivider(modifier = Modifier.padding(vertical = Spacing.sm))
                 
-                // Section: Sessions
                 TutorialSection(
-                    title = "Sessions",
-                    content = "Manage multiple independent calculator sessions via the drawer (swipe from left edge or tap the drawer icon)."
+                    title = stringResource(R.string.tutorial_section_sessions),
+                    content = stringResource(R.string.tutorial_sessions_content)
                 )
                 
                 HorizontalDivider(modifier = Modifier.padding(vertical = Spacing.sm))
                 
-                // Section: Themes
                 TutorialSection(
-                    title = "Themes",
-                    content = "Customize the app's appearance in Settings → Appearance. " +
-                            "You can import custom CSS-based themes!"
+                    title = stringResource(R.string.tutorial_section_themes),
+                    content = stringResource(R.string.tutorial_themes_content)
                 )
             }
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Got it!")
+                Text(stringResource(R.string.tutorial_confirm))
             }
         }
     )

@@ -36,6 +36,9 @@ import androidx.compose.ui.unit.dp
 import com.neocalc.app.core.CalculatorMode
 import com.neocalc.app.ui.style.Spacing
 import com.neocalc.app.ui.util.NumberFormatter
+import com.neocalc.app.R
+import androidx.compose.ui.res.stringResource
+import uniffi.neocalc_backend.HistoryItem
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -43,12 +46,13 @@ fun Display(
     displayText: String,
     currentMode: CalculatorMode,
     onModeClick: () -> Unit,
-    history: List<String> = emptyList(),
-    onHistoryItemClick: (String) -> Unit = {},
+    history: List<HistoryItem> = emptyList(),
+    onHistoryItemClick: (HistoryItem) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    // Display Container
+    val copiedMessage = stringResource(R.string.history_copied)
+    
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -87,7 +91,7 @@ fun Display(
                 .align(Alignment.BottomEnd)
                 .padding(top = Spacing.xl)
         ) {
-            // History List
+            // History List with HistoryItem support
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
@@ -96,6 +100,14 @@ fun Display(
                 contentPadding = PaddingValues(bottom = Spacing.sm)
             ) {
                  items(history) { item ->
+                     val displayString = "${item.expression} = ${item.result}"
+                     // Use error color for error items, secondary for normal
+                     val textColor = if (item.isError) {
+                         MaterialTheme.colorScheme.error
+                     } else {
+                         MaterialTheme.colorScheme.secondary
+                     }
+                     
                      Surface(
                          shape = RoundedCornerShape(Spacing.xs),
                          color = MaterialTheme.colorScheme.surface,
@@ -106,16 +118,16 @@ fun Display(
                                  onLongClick = {
                                      // Copy to clipboard
                                      val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                     val clip = ClipData.newPlainText("History", item)
+                                     val clip = ClipData.newPlainText("History", displayString)
                                      clipboard.setPrimaryClip(clip)
-                                     Toast.makeText(context, "Copied!", Toast.LENGTH_SHORT).show()
+                                     Toast.makeText(context, copiedMessage, Toast.LENGTH_SHORT).show()
                                  }
                              )
                      ) {
                          Text(
-                            text = item,
+                            text = displayString,
                             style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.secondary,
+                            color = textColor,
                             textAlign = TextAlign.End,
                             modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.xs)
                          )
@@ -128,7 +140,7 @@ fun Display(
                 style = MaterialTheme.typography.displayMedium.copy(
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Medium
-                ), // M3 displayMedium for main result
+                ),
                 textAlign = TextAlign.End,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
@@ -136,4 +148,40 @@ fun Display(
             )
         }
     }
+}
+
+/**
+ * Legacy Display overload for backward compatibility.
+ * Converts string history to HistoryItem format.
+ */
+@Composable
+fun Display(
+    displayText: String,
+    currentMode: CalculatorMode,
+    onModeClick: () -> Unit,
+    history: List<String>,
+    onHistoryItemClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    // Convert strings to HistoryItems for backward compatibility
+    val historyItems = history.map { item ->
+        val parts = item.split(" = ")
+        HistoryItem(
+            expression = parts.getOrElse(0) { item },
+            result = parts.getOrElse(1) { "" },
+            timestamp = 0u,
+            isError = false
+        )
+    }
+    
+    Display(
+        displayText = displayText,
+        currentMode = currentMode,
+        onModeClick = onModeClick,
+        history = historyItems,
+        onHistoryItemClick = { historyItem -> 
+            onHistoryItemClick("${historyItem.expression} = ${historyItem.result}")
+        },
+        modifier = modifier
+    )
 }

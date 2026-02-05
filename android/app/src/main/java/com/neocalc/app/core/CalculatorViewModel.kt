@@ -1,126 +1,84 @@
 package com.neocalc.app.core
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import android.util.Log
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import uniffi.neocalc_backend.Calculator
+import uniffi.neocalc_backend.HistoryItem
 
-class CalculatorViewModel : ViewModel() {
+class CalculatorViewModel(application: Application) : AndroidViewModel(application) {
 
+    private val sessionManager = SessionManager(application.applicationContext)
 
-    data class Session(
-        val id: String,
-        var name: String,
-        val calculator: Calculator,
-        val mode: MutableStateFlow<CalculatorMode> = MutableStateFlow(CalculatorMode.STANDARD)
+    private val _uiState = MutableStateFlow(CalculatorUiState())
+    val uiState: StateFlow<CalculatorUiState> = _uiState.asStateFlow()
+
+    // Convenience accessors for backward compatibility during migration
+    val sessions: StateFlow<List<SessionManager.Session>> get() = MutableStateFlow(uiState.value.sessions)
+    val currentSession: StateFlow<SessionManager.Session?> get() = MutableStateFlow(uiState.value.currentSession)
+    val displayValue: StateFlow<String> get() = MutableStateFlow(uiState.value.displayValue)
+    val history: StateFlow<List<String>> get() = MutableStateFlow(
+        uiState.value.history.map { item -> "${item.expression} = ${item.result}" }
     )
-
-    private val _sessions = MutableStateFlow<List<Session>>(emptyList())
-    val sessions: StateFlow<List<Session>> = _sessions.asStateFlow()
-
-    private val _currentSession = MutableStateFlow<Session?>(null)
-    val currentSession: StateFlow<Session?> = _currentSession.asStateFlow()
-
-    private val _displayValue = MutableStateFlow("0")
-    val displayValue: StateFlow<String> = _displayValue.asStateFlow()
-
-    private val _history = MutableStateFlow<List<String>>(emptyList())
-    val history: StateFlow<List<String>> = _history.asStateFlow()
-
-
-
-    // Settings State
-    private val _showFractions = MutableStateFlow(false)
-    val showFractions: StateFlow<Boolean> = _showFractions.asStateFlow()
-
-    fun setFractionDisplay(enabled: Boolean) {
-        viewModelScope.launch {
-            _showFractions.value = enabled
-            // Update all active sessions settings (or just current, but usually settings are global)
-            _sessions.value.forEach { session ->
-                 try {
-                     session.calculator.setFractionDisplay(enabled)
-                 } catch (e: Exception) {
-                     android.util.Log.e("CalculatorViewModel", "Error setting fraction display", e)
-                 }
-            }
-        }
-    }
-
-    // Expose current mode dynamically via stable StateFlow
-    private val _mode = MutableStateFlow(CalculatorMode.STANDARD)
-    val mode: StateFlow<CalculatorMode> = _mode.asStateFlow()
-
-    private var modeCollectionJob: kotlinx.coroutines.Job? = null
+    val mode: StateFlow<CalculatorMode> get() = MutableStateFlow(uiState.value.currentMode)
+    val showFractions: StateFlow<Boolean> get() = MutableStateFlow(uiState.value.showFractions)
 
     init {
+        syncState()
+    }
 
-        addNewSession()
+    private fun syncState() {
+        _uiState.update { current ->
+            current.copy(
+                sessions = sessionManager.sessions,
+                currentSession = sessionManager.currentSession,
+                displayValue = sessionManager.getBuffer(),
+                history = sessionManager.getHistory(),
+                currentMode = sessionManager.currentSession?.mode ?: CalculatorMode.STANDARD,
+                lastResult = sessionManager.getLastResult()
+            )
+        }
     }
 
     fun addNewSession() {
-        val newSession = Session(
-            id = java.util.UUID.randomUUID().toString(),
-            name = "Calc ${(_sessions.value.size + 1)}",
-            calculator = Calculator()
-        )
-        // Apply current settings to new session
-        try {
-            newSession.calculator.setFractionDisplay(_showFractions.value)
-        } catch (e: Exception) { /* ignore */ }
-
-        _sessions.value = _sessions.value + newSession
-        switchToSession(newSession)
-    }
-
-    fun switchToSession(session: Session) {
-        _currentSession.value = session
-        
-        // Sync display and history and mode
         viewModelScope.launch {
-            _displayValue.value = session.calculator.getBuffer()
-            // Use legacy string format for backward compatibility
-            _history.value = session.calculator.getHistoryStrings()
-        }
-        
-        // Sync Mode: Cancel previous collector and start new one
-        modeCollectionJob?.cancel()
-        modeCollectionJob = viewModelScope.launch {
-            session.mode.collect { newMode ->
-                _mode.value = newMode
-            }
+            sessionManager.createSession()
+            syncState()
         }
     }
-    
-    fun removeSession(session: Session) {
-        if (_sessions.value.size <= 1) return // Keep at least one
-        
-        // Destroy rust object
-        session.calculator.destroy()
-        
-        val newList = _sessions.value.toMutableList()
-        newList.remove(session)
-        _sessions.value = newList
-        
-        if (_currentSession.value == session) {
-            switchToSession(newList.first())
+
+    fun switchToSession(session: SessionManager.Session) {
+        viewModelScope.launch {
+            sessionManager.switchTo(session)
+            syncState()
+        }
+    }
+
+    fun removeSession(session: SessionManager.Session) {
+        viewModelScope.launch {
+            if (sessionManager.removeSession(session)) {
+                syncState()
+            }
         }
     }
 
     fun setMode(newMode: CalculatorMode) {
-        _currentSession.value?.mode?.value = newMode
+        viewModelScope.launch {
+            sessionManager.currentSession?.let {
+                it.mode = newMode
+            }
+            _uiState.update { it.copy(currentMode = newMode) }
+        }
     }
 
-    /**
-     * Cycle through modes (for swipe gestures).
-     * @param forward If true, cycle forward; if false, cycle backward.
-     */
     fun cycleMode(forward: Boolean) {
         val modes = CalculatorMode.entries
-        val current = _mode.value
+        val current = uiState.value.currentMode
         val currentIndex = modes.indexOf(current)
         val newIndex = if (forward) {
             (currentIndex + 1) % modes.size
@@ -130,19 +88,16 @@ class CalculatorViewModel : ViewModel() {
         setMode(modes[newIndex])
     }
 
-    /**
-     * Insert a history item value into the current buffer.
-     */
     fun insertHistoryItem(item: String) {
         viewModelScope.launch {
             try {
-                _currentSession.value?.let { session ->
-                    // Extract the result from history item (format: "expression = result")
+                sessionManager.currentSession?.let { session ->
                     val result = item.substringAfterLast("=").trim()
-                    _displayValue.value = session.calculator.input(result)
+                    val newBuffer = session.calculator.input(result)
+                    _uiState.update { it.copy(displayValue = newBuffer) }
                 }
             } catch (e: Exception) {
-                android.util.Log.e("CalculatorViewModel", "Error inserting history item", e)
+                Log.e(TAG, "Error inserting history item", e)
             }
         }
     }
@@ -150,11 +105,12 @@ class CalculatorViewModel : ViewModel() {
     fun input(text: String) {
         viewModelScope.launch {
             try {
-                _currentSession.value?.let { session ->
-                     _displayValue.value = session.calculator.input(text)
+                sessionManager.currentSession?.let { session ->
+                    val newBuffer = session.calculator.input(text)
+                    _uiState.update { it.copy(displayValue = newBuffer) }
                 }
             } catch (e: Exception) {
-                android.util.Log.e("CalculatorViewModel", "Error executing input", e)
+                Log.e(TAG, "Error executing input", e)
             }
         }
     }
@@ -162,11 +118,12 @@ class CalculatorViewModel : ViewModel() {
     fun backspace() {
         viewModelScope.launch {
             try {
-                 _currentSession.value?.let { session ->
-                    _displayValue.value = session.calculator.backspace()
-                 }
+                sessionManager.currentSession?.let { session ->
+                    val newBuffer = session.calculator.backspace()
+                    _uiState.update { it.copy(displayValue = newBuffer) }
+                }
             } catch (e: Exception) {
-                android.util.Log.e("CalculatorViewModel", "Error executing backspace", e)
+                Log.e(TAG, "Error executing backspace", e)
             }
         }
     }
@@ -174,11 +131,12 @@ class CalculatorViewModel : ViewModel() {
     fun clear() {
         viewModelScope.launch {
             try {
-                 _currentSession.value?.let { session ->
-                     _displayValue.value = session.calculator.clear()
-                 }
+                sessionManager.currentSession?.let { session ->
+                    val newBuffer = session.calculator.clear()
+                    _uiState.update { it.copy(displayValue = newBuffer) }
+                }
             } catch (e: Exception) {
-                android.util.Log.e("CalculatorViewModel", "Error executing clear", e)
+                Log.e(TAG, "Error executing clear", e)
             }
         }
     }
@@ -186,14 +144,19 @@ class CalculatorViewModel : ViewModel() {
     fun evaluate() {
         viewModelScope.launch {
             try {
-                // Evaluate current state
-                 _currentSession.value?.let { session ->
-                    _displayValue.value = session.calculator.evaluate()
-                    updateHistory()
-                 }
+                sessionManager.currentSession?.let { session ->
+                    val result = session.calculator.evaluate()
+                    _uiState.update { current ->
+                        current.copy(
+                            displayValue = result,
+                            history = sessionManager.getHistory(),
+                            lastResult = sessionManager.getLastResult()
+                        )
+                    }
+                }
             } catch (e: Exception) {
-               android.util.Log.e("CalculatorViewModel", "Error executing evaluate", e)
-               _displayValue.value = "Error"
+                Log.e(TAG, "Error executing evaluate", e)
+                _uiState.update { it.copy(displayValue = "Error", errorMessage = e.message) }
             }
         }
     }
@@ -201,11 +164,12 @@ class CalculatorViewModel : ViewModel() {
     fun convertToHex() {
         viewModelScope.launch {
             try {
-                 _currentSession.value?.let { session ->
-                    _displayValue.value = session.calculator.convertToHex()
-                 }
+                sessionManager.currentSession?.let { session ->
+                    val result = session.calculator.convertToHex()
+                    _uiState.update { it.copy(displayValue = result) }
+                }
             } catch (e: Exception) {
-                android.util.Log.e("CalculatorViewModel", "Error executing hex conversion", e)
+                Log.e(TAG, "Error executing hex conversion", e)
             }
         }
     }
@@ -213,31 +177,57 @@ class CalculatorViewModel : ViewModel() {
     fun convertToBin() {
         viewModelScope.launch {
             try {
-                 _currentSession.value?.let { session ->
-                    _displayValue.value = session.calculator.convertToBin()
-                 }
+                sessionManager.currentSession?.let { session ->
+                    val result = session.calculator.convertToBin()
+                    _uiState.update { it.copy(displayValue = result) }
+                }
             } catch (e: Exception) {
-                android.util.Log.e("CalculatorViewModel", "Error executing bin conversion", e)
+                Log.e(TAG, "Error executing bin conversion", e)
             }
         }
     }
 
-    private fun updateHistory() {
-         viewModelScope.launch {
+    fun convertToOct() {
+        viewModelScope.launch {
             try {
-                 _currentSession.value?.let { session ->
-                    // Use legacy string format for backward compatibility
-                    _history.value = session.calculator.getHistoryStrings()
-                 }
+                sessionManager.currentSession?.let { session ->
+                    val result = session.calculator.convertToOct()
+                    _uiState.update { it.copy(displayValue = result) }
+                }
             } catch (e: Exception) {
-                android.util.Log.e("CalculatorViewModel", "Error updating history", e)
+                Log.e(TAG, "Error executing octal conversion", e)
             }
         }
     }
-    
+
+    fun insertLastResult() {
+        viewModelScope.launch {
+            try {
+                sessionManager.getLastResult()?.let { lastResult ->
+                    sessionManager.currentSession?.let { session ->
+                        val newBuffer = session.calculator.input(lastResult)
+                        _uiState.update { it.copy(displayValue = newBuffer) }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error inserting last result", e)
+            }
+        }
+    }
+
+    fun setFractionDisplay(enabled: Boolean) {
+        viewModelScope.launch {
+            sessionManager.setFractionDisplay(enabled)
+            _uiState.update { it.copy(showFractions = enabled) }
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
-        // Cleanup Rust resources
-        _sessions.value.forEach { it.calculator.destroy() }
+        sessionManager.cleanup()
+    }
+
+    companion object {
+        private const val TAG = "CalculatorViewModel"
     }
 }

@@ -88,6 +88,7 @@ fun AboutDialog(
                         is com.neocalc.app.utils.UpdateStatus.Downloaded -> androidx.compose.material.icons.Icons.Default.InstallMobile
                         is com.neocalc.app.utils.UpdateStatus.UpToDate -> androidx.compose.material.icons.Icons.Default.CheckCircle
                         is com.neocalc.app.utils.UpdateStatus.Error -> androidx.compose.material.icons.Icons.Default.Warning
+                        is com.neocalc.app.utils.UpdateStatus.ChecksumFailed -> androidx.compose.material.icons.Icons.Default.Warning
                         else -> androidx.compose.material.icons.Icons.Default.SystemUpdate
                     },
                     isLoading = updateStatus is com.neocalc.app.utils.UpdateStatus.Loading || updateStatus is com.neocalc.app.utils.UpdateStatus.Downloading,
@@ -100,6 +101,7 @@ fun AboutDialog(
                         is com.neocalc.app.utils.UpdateStatus.Downloaded -> "Tap to install ${s.version}"
                         is com.neocalc.app.utils.UpdateStatus.UpToDate -> "Up to date"
                         is com.neocalc.app.utils.UpdateStatus.Error -> s.message
+                        is com.neocalc.app.utils.UpdateStatus.ChecksumFailed -> "Security check failed! Download aborted."
                         else -> ""
                     },
                     iconTint = when(updateStatus) {
@@ -107,6 +109,7 @@ fun AboutDialog(
                          is com.neocalc.app.utils.UpdateStatus.Downloaded -> androidx.compose.material3.MaterialTheme.colorScheme.primary
                          is com.neocalc.app.utils.UpdateStatus.UpToDate -> androidx.compose.material3.MaterialTheme.colorScheme.tertiary
                          is com.neocalc.app.utils.UpdateStatus.Error -> androidx.compose.material3.MaterialTheme.colorScheme.error
+                         is com.neocalc.app.utils.UpdateStatus.ChecksumFailed -> androidx.compose.material3.MaterialTheme.colorScheme.error
                          else -> androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
                     },
                     onClick = {
@@ -117,8 +120,9 @@ fun AboutDialog(
                                      updateStatus = com.neocalc.app.utils.UpdateStatus.Downloading(0, s.version)
                                      updateStatus = com.neocalc.app.utils.UpdateManager.downloadApk(
                                          context = context,
-                                         downloadUrl = s.apkDownloadUrl,
+                                         downloadUrl = s.downloadUrl,
                                          version = s.version,
+                                         expectedChecksum = s.checksum,
                                          onProgress = { progress ->
                                              updateStatus = com.neocalc.app.utils.UpdateStatus.Downloading(progress, s.version)
                                          }
