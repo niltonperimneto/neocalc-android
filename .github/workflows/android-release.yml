@@ -119,6 +119,27 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
+      - name: Sign Release with Minisign
+        id: sign_release
+        run: |
+          # 1. Install Minisign
+          sudo apt-get install -y minisign
+
+          # 2. Create Checksums
+          cd android/app/build/outputs/apk/release
+          sha256sum *.apk > SHA256SUMS.txt
+          
+          # 3. Decode Secret Key
+          echo "${{ secrets.MINISIGN_SECRET_KEY }}" > minisign.key
+          
+          # 4. Sign the Checksum file
+          # -S: sign, -m: message text, -s: secret key file, -x: signature output file
+          # Assuming passwordless key for now, or use -p if needed
+          minisign -S -m SHA256SUMS.txt -s minisign.key -x SHA256SUMS.txt.minisig
+          
+          # 5. Clean up secret
+          rm minisign.key
+          
       - name: Release and Upload
         uses: softprops/action-gh-release@v2
         with:
@@ -130,6 +151,8 @@ jobs:
             android/app/build/outputs/apk/release/app-armeabi-v7a-release.apk
             android/app/build/outputs/apk/release/app-x86-release.apk
             android/app/build/outputs/apk/release/app-x86_64-release.apk
+            android/app/build/outputs/apk/release/SHA256SUMS.txt
+            android/app/build/outputs/apk/release/SHA256SUMS.txt.minisig
           draft: false
           prerelease: false
         env:
