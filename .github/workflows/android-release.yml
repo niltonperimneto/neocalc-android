@@ -124,7 +124,12 @@ jobs:
         with:
           tag_name: ${{ steps.define_version.outputs.version }}
           name: Release ${{ steps.define_version.outputs.version }}
-          files: android/app/build/outputs/apk/release/app-release.apk
+          files: |
+            android/app/build/outputs/apk/release/app-universal-release.apk
+            android/app/build/outputs/apk/release/app-arm64-v8a-release.apk
+            android/app/build/outputs/apk/release/app-armeabi-v7a-release.apk
+            android/app/build/outputs/apk/release/app-x86-release.apk
+            android/app/build/outputs/apk/release/app-x86_64-release.apk
           draft: false
           prerelease: false
         env:

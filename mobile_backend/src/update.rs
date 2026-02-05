@@ -54,8 +54,13 @@ struct GitHubAsset {
 }
 
 /// Check for updates from GitHub Releases
+///
+/// # Arguments
+/// * `current_version` - Current app version (e.g., "v2024.02-1")
+/// * `device_abi` - Device ABI (e.g., "arm64-v8a", "armeabi-v7a", "x86_64", "x86")
+///                  Pass empty string to always use universal APK
 #[uniffi::export]
-pub fn check_for_updates(current_version: String) -> UpdateCheckResult {
+pub fn check_for_updates(current_version: String, device_abi: String) -> UpdateCheckResult {
     let api_url = format!(
         "https://api.github.com/repos/{}/releases/latest",
         GITHUB_REPO
@@ -110,32 +115,49 @@ pub fn check_for_updates(current_version: String) -> UpdateCheckResult {
         return UpdateCheckResult::UpToDate;
     }
 
-    // Find APK and checksum file URLs
-    let mut apk_url: Option<String> = None;
-    let mut apk_filename: Option<String> = None;
-    let mut checksum_url: Option<String> = None;
+    // Find APK matching device ABI, with fallback to universal
+    let mut arch_apk: Option<(&str, &str)> = None; // (url, filename)
+    let mut universal_apk: Option<(&str, &str)> = None;
+    let mut legacy_apk: Option<(&str, &str)> = None; // app-release.apk fallback
+    let mut checksum_url: Option<&str> = None;
 
     for asset in &release.assets {
-        if asset.name.ends_with(".apk") {
-            apk_url = Some(asset.browser_download_url.clone());
-            apk_filename = Some(asset.name.clone());
-        } else if asset.name == "SHA256SUMS.txt" || asset.name == "checksums.txt" {
-            checksum_url = Some(asset.browser_download_url.clone());
+        if asset.name == "SHA256SUMS.txt" || asset.name == "checksums.txt" {
+            checksum_url = Some(&asset.browser_download_url);
+        } else if asset.name.ends_with(".apk") {
+            // Match architecture-specific APK
+            if !device_abi.is_empty() && asset.name.contains(&device_abi) {
+                arch_apk = Some((&asset.browser_download_url, &asset.name));
+            }
+            // Universal APK (fallback 1)
+            if asset.name.contains("universal") {
+                universal_apk = Some((&asset.browser_download_url, &asset.name));
+            }
+            // Legacy naming (fallback 2)
+            if asset.name == "app-release.apk" {
+                legacy_apk = Some((&asset.browser_download_url, &asset.name));
+            }
         }
     }
 
-    let download_url = match apk_url {
-        Some(url) => url,
-        None => {
-            return UpdateCheckResult::Error {
-                message: "No APK found in release assets".to_string(),
-            }
-        }
-    };
+    // Priority: arch-specific > universal > legacy
+    let (download_url, apk_filename) = arch_apk
+        .or(universal_apk)
+        .or(legacy_apk)
+        .map(|(url, name)| (url.to_string(), name.to_string()))
+        .unwrap_or_else(|| {
+            return ("".to_string(), "".to_string());
+        });
+
+    if download_url.is_empty() {
+        return UpdateCheckResult::Error {
+            message: "No compatible APK found in release assets".to_string(),
+        };
+    }
 
     // Fetch checksum if available
-    let checksum = if let (Some(url), Some(filename)) = (checksum_url, apk_filename) {
-        fetch_checksum_for_file(&client, &url, &filename)
+    let checksum = if let Some(url) = checksum_url {
+        fetch_checksum_for_file(&client, url, &apk_filename)
     } else {
         None
     };
@@ -303,7 +325,7 @@ mod tests {
     #[test]
     fn test_check_for_updates_parses_response() {
         // This test requires network access; skip in CI if needed
-        let result = check_for_updates("v0.0.1".to_string());
+        let result = check_for_updates("v0.0.1".to_string(), "arm64-v8a".to_string());
         match result {
             UpdateCheckResult::Available {
                 version,

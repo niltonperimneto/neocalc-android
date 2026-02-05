@@ -56,6 +56,16 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    // Build separate APKs for each ABI (smaller downloads)
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            isUniversalApk = true  // Also build a universal APK
+        }
+    }
 }
 
 // Cargo build moved to manual task due to plugin incompatibility

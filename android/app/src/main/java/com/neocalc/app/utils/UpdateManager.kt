@@ -42,13 +42,17 @@ object UpdateManager {
 
     /**
      * Check for updates using Rust backend.
+     * Automatically detects device ABI for architecture-specific APK downloads.
      */
     suspend fun checkForUpdates(currentVersion: String): UpdateStatus {
         return withContext(Dispatchers.IO) {
             try {
-                when (val result = rustCheckForUpdates(currentVersion)) {
+                // Get primary device ABI for architecture-specific APK selection
+                val deviceAbi = android.os.Build.SUPPORTED_ABIS.firstOrNull() ?: ""
+                
+                when (val result = rustCheckForUpdates(currentVersion, deviceAbi)) {
                     is UpdateCheckResult.Available -> {
-                        Log.d(TAG, "Update available: ${result.version}")
+                        Log.d(TAG, "Update available: ${result.version} (ABI: $deviceAbi)")
                         UpdateStatus.Available(
                             version = result.version,
                             downloadUrl = result.downloadUrl,
