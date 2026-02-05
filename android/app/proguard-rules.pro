@@ -60,5 +60,5 @@
 -dontwarn java.awt.**
 -dontwarn com.sun.jna.Native$AWT
 
-# Open Source: Keep class names readable for debugging (Optimization/Shrinking still enabled)
+# Keep class names readable for debugging (Optimization/Shrinking still enabled)
 -dontobfuscate

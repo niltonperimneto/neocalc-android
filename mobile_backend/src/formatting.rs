@@ -119,7 +119,6 @@ pub fn format_for_display(input: String, locale: NumberLocale) -> String {
 
 /// Add thousands separators to an integer string
 fn add_thousands_separator(integer: &str, separator: char) -> String {
-    // Input is already validated as ascii digits, so len() in bytes == len() in chars
     let len = integer.len();
 
     if len <= 3 {
