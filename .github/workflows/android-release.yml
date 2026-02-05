@@ -6,14 +6,22 @@ on:
     tags:
       - 'v*'
 
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   # Job 1: Auto-Tagging (Only runs on manual trigger)
   create_tag:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch'
+    timeout-minutes: 5
+    permissions:
+      contents: write # Needed to push tags
     outputs:
       new_tag: ${{ steps.tag_step.outputs.new_tag }}
     steps:
@@ -49,12 +57,12 @@ jobs:
           echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
 
   # Job 2: Build & Release
-  # Runs if:
-  # 1. It's a tag push (independent run)
-  # 2. OR if create_tag finished successfully (manual run)
   build_release:
     runs-on: ubuntu-latest
     needs: create_tag
+    timeout-minutes: 30
+    permissions:
+      contents: write # Needed to create release and upload assets
     if: |
       always() && 
       (needs.create_tag.result == 'success' || (needs.create_tag.result == 'skipped' && startsWith(github.ref, 'refs/tags/v')))
@@ -65,7 +73,7 @@ jobs:
           submodules: recursive
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -76,15 +84,15 @@ jobs:
         with:
           targets: aarch64-linux-android, armv7-linux-androideabi, x86_64-linux-android, i686-linux-android
 
-      - name: Cache cargo-ndk
-        id: cache-cargo-ndk
-        uses: actions/cache@v4
+      - name: Cache Rust Dependencies
+        uses: swatinem/rust-cache@v2
         with:
-          path: ~/.cargo/bin/cargo-ndk
-          key: ${{ runner.os }}-cargo-ndk-3.4.0
+          workspaces: |
+            backend
+            mobile_backend
+          cache-on-failure: true
 
       - name: Install cargo-ndk
-        if: steps.cache-cargo-ndk.outputs.cache-hit != 'true'
         run: cargo install cargo-ndk
 
       - name: Configure Keystore
@@ -145,6 +153,7 @@ jobs:
         with:
           tag_name: ${{ steps.define_version.outputs.version }}
           name: Release ${{ steps.define_version.outputs.version }}
+          generate_release_notes: true
           files: |
             android/app/build/outputs/apk/release/app-universal-release.apk
             android/app/build/outputs/apk/release/app-arm64-v8a-release.apk
