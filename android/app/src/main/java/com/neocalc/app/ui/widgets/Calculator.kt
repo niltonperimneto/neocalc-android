@@ -196,6 +196,7 @@ fun Calculator(
                         gridContent(Modifier.weight(LayoutWeights.gridLandscape))
                     }
                 } else {
+                    Column(modifier = Modifier.fillMaxSize()) {
                         Display(
                             displayText = uiState.displayValue,
                             currentMode = uiState.currentMode,
@@ -207,6 +208,7 @@ fun Calculator(
                         
                         gridContent(Modifier.weight(LayoutWeights.gridPortrait))
                     }
+                }
                 }
             }
         }
