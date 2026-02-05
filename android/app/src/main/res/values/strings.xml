@@ -1,3 +1,41 @@
 <resources>
     <string name="app_name">NeoCalc</string>
+
+    <!-- Settings Dialog -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_section_general">General</string>
+    <string name="settings_show_fractions">Show Fractions</string>
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_import_theme">Import Theme</string>
+    <string name="settings_section_help">Help</string>
+    <string name="settings_help_tutorial">Help &amp; Tutorial</string>
+    <string name="settings_close">Close</string>
+
+    <!-- Tutorial Dialog -->
+    <string name="tutorial_title">Help &amp; Tutorial</string>
+    <string name="tutorial_section_basic">Basic Usage</string>
+    <string name="tutorial_basic_content">Enter numbers and operators to create expressions. Press \'=\' to evaluate. Use \'C\' to clear and \'⌫\' to delete.</string>
+    <string name="tutorial_section_modes">Calculator Modes</string>
+    <string name="tutorial_modes_content">NeoCalc offers 4 modes:\n• Standard: Basic arithmetic\n• Scientific: sin, cos, log, sqrt, etc.\n• Programming: Hex, Binary, Bitwise ops\n• Financial: Interest, loan calculations</string>
+    <string name="tutorial_section_gestures">Gestures</string>
+    <string name="tutorial_gestures_content">• Swipe Left/Right on the keypad to switch between modes.\n• Tap the mode chip at the top to open the mode picker.</string>
+    <string name="tutorial_section_history">History</string>
+    <string name="tutorial_history_content">• Tap a history entry to insert its result into the input.\n• Long-press a history entry to copy it to the clipboard.</string>
+    <string name="tutorial_section_sessions">Sessions</string>
+    <string name="tutorial_sessions_content">Manage multiple independent calculator sessions via the drawer (swipe from left edge or tap the drawer icon).</string>
+    <string name="tutorial_section_themes">Themes</string>
+    <string name="tutorial_themes_content">Customize the app\'s appearance in Settings → Appearance. You can import custom CSS-based themes!</string>
+    <string name="tutorial_confirm">Got it!</string>
+
+    <!-- Calculator Screen -->
+    <string name="calculator_select_mode">Select Mode</string>
+    <string name="calculator_sessions">Sessions</string>
+    <string name="calculator_new_calculator">New Calculator</string>
+    <string name="calculator_close_session">Close Session</string>
+    <string name="content_desc_settings">Settings</string>
+    <string name="content_desc_about">About</string>
+    <string name="content_desc_add">Add</string>
+
+    <!-- History -->
+    <string name="history_copied">Copied!</string>
 </resources>

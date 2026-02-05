@@ -96,3 +96,43 @@ fun GridButton(
         }
     }
 }
+
+// Compose Previews for Android Studio design tools
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Composable
+private fun PreviewNumberButton() {
+    MaterialTheme {
+        GridButton(
+            text = "7",
+            onClick = {},
+            type = ButtonType.NUMBER,
+            useAspectRatio = false
+        )
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Composable
+private fun PreviewOperatorButton() {
+    MaterialTheme {
+        GridButton(
+            text = "+",
+            onClick = {},
+            type = ButtonType.OPERATOR,
+            useAspectRatio = false
+        )
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Composable
+private fun PreviewEqualsButton() {
+    MaterialTheme {
+        GridButton(
+            text = "=",
+            onClick = {},
+            type = ButtonType.EQUALS,
+            useAspectRatio = false
+        )
+    }
+}

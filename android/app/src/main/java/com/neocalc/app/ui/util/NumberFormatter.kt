@@ -1,38 +1,39 @@
 package com.neocalc.app.ui.util
 
-import java.text.DecimalFormat
-import java.text.DecimalFormatSymbols
+import uniffi.neocalc_backend.NumberLocale
+import uniffi.neocalc_backend.formatForDisplay as rustFormatForDisplay
 import java.util.Locale
 
 /**
  * Utility for formatting numbers for display with locale-aware separators.
+ * Delegates to Rust backend for consistent formatting.
  */
 object NumberFormatter {
-    private val decimalFormat = DecimalFormat("#,###.########", DecimalFormatSymbols(Locale.US))
+
+    /**
+     * Get the appropriate NumberLocale based on the current system locale.
+     */
+    private fun getNumberLocale(): NumberLocale {
+        val locale = Locale.getDefault()
+        return when (locale.language) {
+            "pt", "es", "de", "fr", "it" -> NumberLocale.PT_BR // European/Latin format
+            else -> NumberLocale.EN_US // US/UK format
+        }
+    }
 
     /**
      * Format a string as a number with thousand separators if it's a valid number.
+     * Uses the system locale to determine separator style.
      * Returns the original string if parsing fails.
      */
     fun format(input: String): String {
-        // Don't format if it looks like an expression (contains operators)
-        if (input.contains(Regex("[+\\-*/^()=]")) || input.contains(" ")) {
-            return input
-        }
-        
-        return try {
-            val number = input.toDoubleOrNull()
-            when {
-                number == null -> input
-                number.isNaN() || number.isInfinite() -> input
-                number == number.toLong().toDouble() -> {
-                    // It's a whole number
-                    DecimalFormat("#,###").format(number.toLong())
-                }
-                else -> decimalFormat.format(number)
-            }
-        } catch (e: Exception) {
-            input
-        }
+        return rustFormatForDisplay(input, getNumberLocale())
+    }
+
+    /**
+     * Format with explicit locale override.
+     */
+    fun format(input: String, locale: NumberLocale): String {
+        return rustFormatForDisplay(input, locale)
     }
 }

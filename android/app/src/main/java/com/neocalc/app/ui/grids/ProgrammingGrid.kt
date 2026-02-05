@@ -38,20 +38,20 @@ fun ProgrammingGrid(
             GridButton("ROR", { viewModel.input("ror(") }, ButtonType.FUNCTION, Modifier.weight(1f))
         }
 
-        // Row 4: Hex Bin B C
+        // Row 4: Hex Bin Oct C
         Row(Modifier.fillMaxWidth()) {
             GridButton("Hex", { viewModel.convertToHex() }, ButtonType.FUNCTION, Modifier.weight(1f))
             GridButton("Bin", { viewModel.convertToBin() }, ButtonType.FUNCTION, Modifier.weight(1f))
-            GridButton("B", { viewModel.input("B") }, ButtonType.NUMBER, Modifier.weight(1f))
+            GridButton("Oct", { viewModel.convertToOct() }, ButtonType.FUNCTION, Modifier.weight(1f))
             GridButton("C", { viewModel.input("C") }, ButtonType.NUMBER, Modifier.weight(1f))
         }
 
-        // Row 5: D E F 0x
+        // Row 5: B D E F
         Row(Modifier.fillMaxWidth()) {
+            GridButton("B", { viewModel.input("B") }, ButtonType.NUMBER, Modifier.weight(1f))
             GridButton("D", { viewModel.input("D") }, ButtonType.NUMBER, Modifier.weight(1f))
             GridButton("E", { viewModel.input("E") }, ButtonType.NUMBER, Modifier.weight(1f))
             GridButton("F", { viewModel.input("F") }, ButtonType.NUMBER, Modifier.weight(1f))
-            GridButton("0x", { viewModel.input("0x") }, ButtonType.NUMBER, Modifier.weight(1f))
         }
 
         // Standard Numpad

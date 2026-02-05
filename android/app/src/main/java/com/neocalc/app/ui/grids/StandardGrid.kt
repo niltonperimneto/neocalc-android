@@ -17,7 +17,7 @@ fun StandardGrid(
         // Missing Standard Functions Row
         Row(Modifier.fillMaxWidth()) {
             GridButton("%", { viewModel.input("%") }, ButtonType.FUNCTION, Modifier.weight(1f))
-            GridButton("¹/x", { viewModel.input("^(-1)") }, ButtonType.FUNCTION, Modifier.weight(1f))
+            GridButton("ANS", { viewModel.insertLastResult() }, ButtonType.FUNCTION, Modifier.weight(1f))
             GridButton("x²", { viewModel.input("^2") }, ButtonType.FUNCTION, Modifier.weight(1f))
             GridButton("√", { viewModel.input("sqrt(") }, ButtonType.FUNCTION, Modifier.weight(1f))
         }
