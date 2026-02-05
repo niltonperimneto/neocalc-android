@@ -59,3 +59,6 @@
 # JNA references AWT classes that don't exist on Android
 -dontwarn java.awt.**
 -dontwarn com.sun.jna.Native$AWT
+
+# Open Source: Keep class names readable for debugging (Optimization/Shrinking still enabled)
+-dontobfuscate
