@@ -13,6 +13,13 @@ use num_traits::cast::ToPrimitive;
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+/// Initialize the localization subsystem with the device's locale.
+/// Should be called once at app startup with the device's language tag (e.g., "pt-BR", "en-US").
+#[uniffi::export]
+pub fn init_locale(locale: String) {
+    neocalc_core::i18n::init_locale(&locale);
+}
+
 /// Maximum number of history items to keep (prevents unbounded memory growth)
 const MAX_HISTORY_SIZE: usize = 100;
 

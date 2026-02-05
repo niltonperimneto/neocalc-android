@@ -55,3 +55,7 @@
 # Disable obfuscation warnings for missing classes (release builds only)
 -dontwarn org.slf4j.**
 -dontwarn javax.annotation.**
+
+# JNA references AWT classes that don't exist on Android
+-dontwarn java.awt.**
+-dontwarn com.sun.jna.Native$AWT

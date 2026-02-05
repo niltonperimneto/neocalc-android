@@ -7,9 +7,11 @@ import uniffi.neocalc_backend.HistoryItem
 import uniffi.neocalc_backend.LoadResult
 import uniffi.neocalc_backend.PersistedSession
 import uniffi.neocalc_backend.StorageResult
+import uniffi.neocalc_backend.initLocale
 import uniffi.neocalc_backend.loadSessions
 import uniffi.neocalc_backend.saveSessions
 import java.io.File
+import java.util.Locale
 import java.util.UUID
 
 /**
@@ -42,6 +44,9 @@ class SessionManager(private val context: Context) {
         get() = File(context.filesDir, SESSIONS_FILE).absolutePath
     
     init {
+        // Initialize Rust i18n with device locale
+        initLocale(Locale.getDefault().toLanguageTag())
+        
         // Try to load saved sessions, create new if none exist
         if (!loadFromDisk()) {
             createSession()
