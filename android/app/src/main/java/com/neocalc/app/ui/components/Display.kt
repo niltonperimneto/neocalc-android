@@ -101,11 +101,11 @@ fun Display(
             ) {
                  items(history) { item ->
                      val displayString = "${item.expression} = ${item.result}"
-                     // Use error color for error items, secondary for normal
+                     // Use error color for error items, high contrast for normal items
                      val textColor = if (item.isError) {
                          MaterialTheme.colorScheme.error
                      } else {
-                         MaterialTheme.colorScheme.secondary
+                         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
                      }
                      
                      Surface(
