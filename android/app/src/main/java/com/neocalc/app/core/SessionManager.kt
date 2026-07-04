@@ -55,14 +55,10 @@ class SessionManager(private val context: Context) {
     
     init {
         initLocale(Locale.getDefault().toLanguageTag())
+        // The backend guarantees at least one session exists after load.
         rsSessionManager = MobileSessionManager(storagePath)
-        
-        // Ensure at least one session exists
-        if (rsSessionManager.getSessionsOverview().isEmpty()) {
-            rsSessionManager.createSession()
-        }
     }
-    
+
     val sessions: List<Session>
         get() = rsSessionManager.getSessionsOverview().map { it.toSession() }
 
@@ -74,34 +70,55 @@ class SessionManager(private val context: Context) {
             id = this.id,
             name = this.name,
             calculator = SessionCalculatorFacade(), // Facade delegates to current active session
-            mode = CalculatorMode.STANDARD // TODO: Persist mode in Rust
+            mode = AppPreferences.getSessionMode(context, this.id)
         )
     }
 
-    fun createSession() {
-        rsSessionManager.createSession()
+    /** Returns false when the backend's session limit is reached. */
+    fun createSession(): Boolean {
+        return rsSessionManager.createSession() != null
     }
-    
+
     fun switchTo(session: Session) {
         rsSessionManager.switchSession(session.id)
     }
-    
+
     fun removeSession(session: Session): Boolean {
-        return rsSessionManager.deleteSession(session.id)
+        val removed = rsSessionManager.deleteSession(session.id)
+        if (removed) {
+            AppPreferences.clearSessionMode(context, session.id)
+        }
+        return removed
     }
-    
+
+    fun setSessionMode(session: Session, mode: CalculatorMode) {
+        AppPreferences.setSessionMode(context, session.id, mode)
+    }
+
     fun setFractionDisplay(enabled: Boolean) {
-        // ViewModel calls this. Need to implement in Rust Manager.
-        // rsSessionManager.setFractionDisplay(enabled) 
+        rsSessionManager.setFractionDisplay(enabled)
     }
-    
+
+    /** Replace the current buffer with a history entry's expression. */
+    fun restoreExpression(expression: String): String =
+        rsSessionManager.restoreExpression(expression)
+
     fun getBuffer(): String = rsSessionManager.getBuffer()
-    
+
     fun getHistory(): List<HistoryItem> = rsSessionManager.getHistory()
-    
+
     fun getLastResult(): String? = rsSessionManager.getLastResult()
-    
+
+    /**
+     * Synchronously persist all sessions. Blocking — call from a background
+     * thread. Returns an error message on failure, null on success.
+     */
+    fun flush(): String? = rsSessionManager.flush()
+
+    /** Warning recorded while loading persisted state (e.g. recovered corruption). */
+    fun loadWarning(): String? = rsSessionManager.loadWarning()
+
     fun cleanup() {
-        // Backend handles save automatically
+        flush()
     }
 }

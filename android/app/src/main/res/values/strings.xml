@@ -38,4 +38,7 @@
 
     <!-- History -->
     <string name="history_copied">Copied!</string>
+
+    <!-- Sessions -->
+    <string name="session_limit_reached">Session limit reached — close a session to create a new one</string>
 </resources>

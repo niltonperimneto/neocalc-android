@@ -11,13 +11,19 @@ import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
+import com.neocalc.app.core.CalculatorViewModel
 import com.neocalc.app.ui.style.NeoCalcTheme
 import com.neocalc.app.ui.theme.ThemeManager
 import com.neocalc.app.ui.windows.MainWindow
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+
+    // Same instance the Compose tree resolves via viewModel().
+    private val viewModel: CalculatorViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         lifecycleScope.launch {
@@ -38,5 +44,11 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Guarantee durability beyond the backend's debounced writer.
+        viewModel.flush()
     }
 }
