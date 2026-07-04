@@ -102,7 +102,6 @@ fun AboutDialog(
                         is com.neocalc.app.utils.UpdateStatus.UpToDate -> "Up to date"
                         is com.neocalc.app.utils.UpdateStatus.Error -> s.message
                         is com.neocalc.app.utils.UpdateStatus.ChecksumFailed -> "Security check failed! Download aborted."
-                        else -> ""
                     },
                     iconTint = when(updateStatus) {
                          is com.neocalc.app.utils.UpdateStatus.Available -> androidx.compose.material3.MaterialTheme.colorScheme.primary
