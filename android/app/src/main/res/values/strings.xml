@@ -6,6 +6,10 @@
     <string name="settings_section_general">General</string>
     <string name="settings_show_fractions">Show Fractions</string>
     <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_dark_system">System</string>
+    <string name="settings_dark_light">Light</string>
+    <string name="settings_dark_dark">Dark</string>
+    <string name="settings_theme_dynamic">Dynamic (Material You)</string>
     <string name="settings_import_theme">Import Theme</string>
     <string name="settings_section_help">Help</string>
     <string name="settings_help_tutorial">Help &amp; Tutorial</string>
