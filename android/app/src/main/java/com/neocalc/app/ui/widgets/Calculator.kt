@@ -7,16 +7,20 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -29,6 +33,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -121,8 +126,36 @@ fun Calculator(
             modifier = Modifier.fillMaxSize(),
             topBar = {
                 // Blends into the display panel so the top reads as one surface.
-                TopAppBar(
-                    title = { },
+                // The mode selector lives here (no longer floating over history).
+                CenterAlignedTopAppBar(
+                    title = {
+                        Surface(
+                            onClick = { showModeSheet = true },
+                            shape = RoundedCornerShape(50),
+                            color = MaterialTheme.colorScheme.secondaryContainer
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(
+                                    start = Spacing.md,
+                                    end = Spacing.sm,
+                                    top = Spacing.xs + 2.dp,
+                                    bottom = Spacing.xs + 2.dp
+                                ),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = uiState.currentMode.title,
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                                Icon(
+                                    Icons.Filled.ArrowDropDown,
+                                    contentDescription = stringResource(R.string.calculator_select_mode),
+                                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            }
+                        }
+                    },
                     navigationIcon = {
                         IconButton(onClick = { showSettings = true }) {
                             Icon(
@@ -141,7 +174,7 @@ fun Calculator(
                             )
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                         containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                     )
                 )
@@ -202,8 +235,6 @@ fun Calculator(
                     Row(modifier = Modifier.fillMaxSize()) {
                         Display(
                             displayText = uiState.displayValue,
-                            currentMode = uiState.currentMode,
-                            onModeClick = { showModeSheet = true },
                             history = uiState.history,
                             onHistoryRestore = viewModel::restoreHistoryEntry,
                             onHistoryInsertResult = viewModel::insertHistoryResult,
@@ -218,8 +249,6 @@ fun Calculator(
                     Column(modifier = Modifier.fillMaxSize()) {
                         Display(
                             displayText = uiState.displayValue,
-                            currentMode = uiState.currentMode,
-                            onModeClick = { showModeSheet = true },
                             history = uiState.history,
                             onHistoryRestore = viewModel::restoreHistoryEntry,
                             onHistoryInsertResult = viewModel::insertHistoryResult,
