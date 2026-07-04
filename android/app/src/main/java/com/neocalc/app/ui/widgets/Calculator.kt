@@ -120,20 +120,29 @@ fun Calculator(
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             topBar = {
+                // Blends into the display panel so the top reads as one surface.
                 TopAppBar(
                     title = { },
                     navigationIcon = {
                         IconButton(onClick = { showSettings = true }) {
-                            Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.content_desc_settings))
+                            Icon(
+                                Icons.Filled.Settings,
+                                contentDescription = stringResource(R.string.content_desc_settings),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     },
                     actions = {
                         IconButton(onClick = { showAbout = true }) {
-                            Icon(Icons.Filled.Info, contentDescription = stringResource(R.string.content_desc_about))
+                            Icon(
+                                Icons.Filled.Info,
+                                contentDescription = stringResource(R.string.content_desc_about),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                     )
                 )
             }

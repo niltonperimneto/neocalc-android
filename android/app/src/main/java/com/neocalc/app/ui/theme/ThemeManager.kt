@@ -71,12 +71,13 @@ object ThemeManager {
                     parseThemeColors(context, name)?.let { name to swatchOf(it) }
                 }.toMap()
 
-                when (val saved = AppPreferences.getThemeName(context)) {
-                    AppPreferences.THEME_DYNAMIC -> {
+                val saved = AppPreferences.getThemeName(context)
+                when {
+                    saved == AppPreferences.THEME_DYNAMIC -> {
                         _dynamicSelected.value = true
                         _currentTheme.value = null
                     }
-                    in allThemes -> loadTheme(context, saved!!)
+                    saved != null && saved in allThemes -> loadTheme(context, saved)
                     else -> {
                         // First launch or vanished theme: fall back without persisting,
                         // so a later OS/dynamic default change can still win.

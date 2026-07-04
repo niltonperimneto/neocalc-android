@@ -3,7 +3,10 @@ package com.neocalc.app.ui.style
 import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
@@ -17,6 +20,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import com.neocalc.app.core.AppPreferences
 import com.neocalc.app.ui.theme.ThemeManager
@@ -32,6 +38,35 @@ private val DarkColorScheme = darkColorScheme(
     onTertiary = Color(0xFF492532),
     onBackground = Color(0xFFE6E1E5),
     onSurface = Color(0xFFE6E1E5),
+)
+
+/** Type scale tuned for a calculator: big confident numerals, roomy labels. */
+private val NeoCalcTypography = Typography().let { base ->
+    base.copy(
+        displayLarge = base.displayLarge.copy(
+            fontSize = 64.sp,
+            lineHeight = 72.sp,
+            fontWeight = FontWeight.Medium,
+            letterSpacing = (-0.25).sp
+        ),
+        displayMedium = base.displayMedium.copy(
+            fontWeight = FontWeight.Medium
+        ),
+        headlineSmall = base.headlineSmall.copy(
+            fontWeight = FontWeight.Medium
+        ),
+        titleMedium = base.titleMedium.copy(
+            fontWeight = FontWeight.Medium
+        )
+    )
+}
+
+private val NeoCalcShapes = Shapes(
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(24.dp),
+    extraLarge = RoundedCornerShape(28.dp)
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -95,7 +130,8 @@ fun NeoCalcTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = MaterialTheme.typography,
+        typography = NeoCalcTypography,
+        shapes = NeoCalcShapes,
         content = content
     )
 }

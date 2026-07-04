@@ -8,9 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.neocalc.app.core.CalculatorViewModel
@@ -29,13 +26,9 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             ThemeManager.initialize(this@MainActivity)
         }
+        // Edge-to-edge with visible transparent system bars; the Scaffold
+        // consumes the insets. (Previously the bars were hidden entirely.)
         enableEdgeToEdge()
-        
-        // Hide System Bars
-        WindowCompat.getInsetsController(window, window.decorView).apply {
-            hide(WindowInsetsCompat.Type.systemBars())
-            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        }
 
         setContent {
             NeoCalcTheme {
