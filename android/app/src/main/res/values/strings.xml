@@ -20,7 +20,7 @@
     <string name="tutorial_section_gestures">Gestures</string>
     <string name="tutorial_gestures_content">• Swipe Left/Right on the keypad to switch between modes.\n• Tap the mode chip at the top to open the mode picker.</string>
     <string name="tutorial_section_history">History</string>
-    <string name="tutorial_history_content">• Tap a history entry to insert its result into the input.\n• Long-press a history entry to copy it to the clipboard.</string>
+    <string name="tutorial_history_content">• Tap a history entry to bring its expression back for editing.\n• Tap just the result of an entry to insert it into the input.\n• Long-press a history entry to copy it to the clipboard.</string>
     <string name="tutorial_section_sessions">Sessions</string>
     <string name="tutorial_sessions_content">Manage multiple independent calculator sessions via the drawer (swipe from left edge or tap the drawer icon).</string>
     <string name="tutorial_section_themes">Themes</string>

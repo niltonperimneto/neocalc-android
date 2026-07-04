@@ -189,9 +189,6 @@ fun Calculator(
                     }
                 }
 
-                // Convert HistoryItem to strings for backward-compatible Display
-                val historyStrings = uiState.history.map { "${it.expression} = ${it.result}" }
-
                 if (isLandscape) {
                     Row(modifier = Modifier.fillMaxSize()) {
                         Display(
@@ -199,12 +196,13 @@ fun Calculator(
                             currentMode = uiState.currentMode,
                             onModeClick = { showModeSheet = true },
                             history = uiState.history,
-                            onHistoryItemClick = { viewModel.insertHistoryItem("${it.expression} = ${it.result}") },
+                            onHistoryRestore = viewModel::restoreHistoryEntry,
+                            onHistoryInsertResult = viewModel::insertHistoryResult,
                             modifier = Modifier
                                 .weight(LayoutWeights.displayLandscape)
                                 .fillMaxSize()
                         )
-                        
+
                         gridContent(Modifier.weight(LayoutWeights.gridLandscape))
                     }
                 } else {
@@ -214,10 +212,11 @@ fun Calculator(
                             currentMode = uiState.currentMode,
                             onModeClick = { showModeSheet = true },
                             history = uiState.history,
-                            onHistoryItemClick = { viewModel.insertHistoryItem("${it.expression} = ${it.result}") },
+                            onHistoryRestore = viewModel::restoreHistoryEntry,
+                            onHistoryInsertResult = viewModel::insertHistoryResult,
                             modifier = Modifier.weight(LayoutWeights.displayPortrait)
                         )
-                        
+
                         gridContent(Modifier.weight(LayoutWeights.gridPortrait))
                     }
                 }

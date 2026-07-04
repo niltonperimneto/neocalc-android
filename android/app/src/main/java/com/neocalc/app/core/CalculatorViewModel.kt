@@ -20,16 +20,6 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
     private val _uiState = MutableStateFlow(CalculatorUiState())
     val uiState: StateFlow<CalculatorUiState> = _uiState.asStateFlow()
 
-    // Convenience accessors for backward compatibility during migration
-    val sessions: StateFlow<List<SessionManager.Session>> get() = MutableStateFlow(uiState.value.sessions)
-    val currentSession: StateFlow<SessionManager.Session?> get() = MutableStateFlow(uiState.value.currentSession)
-    val displayValue: StateFlow<String> get() = MutableStateFlow(uiState.value.displayValue)
-    val history: StateFlow<List<String>> get() = MutableStateFlow(
-        uiState.value.history.map { item -> "${item.expression} = ${item.result}" }
-    )
-    val mode: StateFlow<CalculatorMode> get() = MutableStateFlow(uiState.value.currentMode)
-    val showFractions: StateFlow<Boolean> get() = MutableStateFlow(uiState.value.showFractions)
-
     init {
         // The Rust core persists show_fractions but exposes no getter, so the
         // preference mirror is the source of truth for seeding the toggle.
@@ -105,16 +95,29 @@ class CalculatorViewModel(application: Application) : AndroidViewModel(applicati
         setMode(modes[newIndex])
     }
 
-    fun insertHistoryItem(item: String) {
+    /** Revert the calculator to a history entry: its expression becomes the buffer again. */
+    fun restoreHistoryEntry(item: HistoryItem) {
+        viewModelScope.launch {
+            try {
+                val newBuffer = sessionManager.restoreExpression(item.expression)
+                _uiState.update { it.copy(displayValue = newBuffer) }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error restoring history entry", e)
+            }
+        }
+    }
+
+    /** Insert a history entry's result into the current expression. */
+    fun insertHistoryResult(item: HistoryItem) {
+        if (item.isError) return
         viewModelScope.launch {
             try {
                 sessionManager.currentSession?.let { session ->
-                    val result = item.substringAfterLast("=").trim()
-                    val newBuffer = session.calculator.input(result)
+                    val newBuffer = session.calculator.input(item.result)
                     _uiState.update { it.copy(displayValue = newBuffer) }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error inserting history item", e)
+                Log.e(TAG, "Error inserting history result", e)
             }
         }
     }
