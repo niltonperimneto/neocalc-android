@@ -20,19 +20,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -49,10 +43,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.neocalc.app.R
-import com.neocalc.app.core.CalculatorMode
 import com.neocalc.app.ui.style.DisplayCorner
 import com.neocalc.app.ui.style.Spacing
 import com.neocalc.app.ui.util.NumberFormatter
@@ -61,8 +53,6 @@ import uniffi.neocalc_backend.HistoryItem
 @Composable
 fun Display(
     displayText: String,
-    currentMode: CalculatorMode,
-    onModeClick: () -> Unit,
     history: List<HistoryItem> = emptyList(),
     onHistoryRestore: (HistoryItem) -> Unit = {},
     onHistoryInsertResult: (HistoryItem) -> Unit = {},
@@ -71,6 +61,8 @@ fun Display(
     val panelColor = MaterialTheme.colorScheme.surfaceContainerLow
 
     // The display reads as one large rounded panel above the keypad.
+    // (The mode selector lives in the top app bar, so history owns the
+    // full panel height with nothing floating above it.)
     Surface(
         color = panelColor,
         shape = RoundedCornerShape(bottomStart = DisplayCorner, bottomEnd = DisplayCorner),
@@ -81,38 +73,11 @@ fun Display(
                 .fillMaxWidth()
                 .padding(Spacing.md),
         ) {
-            // Mode Indicator (Top Center)
-            Surface(
-                onClick = onModeClick,
-                shape = RoundedCornerShape(50),
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                modifier = Modifier.align(Alignment.TopCenter)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.xs + 2.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = currentMode.title,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                    Spacer(Modifier.width(Spacing.xs))
-                    Icon(
-                        imageVector = Icons.Default.ArrowDropDown,
-                        contentDescription = null,
-                        modifier = Modifier.size(Spacing.md),
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                }
-            }
-
             Column(
                 horizontalAlignment = Alignment.End,
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomEnd)
-                    .padding(top = Spacing.xl)
             ) {
                 // History, fading out toward the top edge for depth
                 LazyColumn(

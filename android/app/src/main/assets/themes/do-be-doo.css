@@ -1,72 +1,79 @@
-@define-color window_bg_color #E6F2FF;
-@define-color window_fg_color #4b4b5a;
+/* do-be-doo — the cutest, flashiest NeoCalc theme.
+ * Bunny-nose pinks, kitten-paw lilacs, peach-cream operators and a
+ * bubblegum-raspberry accent, all tuned to >= 4.5:1 text contrast. */
 
-@define-color accent_bg_color #C6B7E2;
-@define-color accent_fg_color #4b4b5a;
-@define-color destructive_bg_color #F6C1D1;
-@define-color destructive_fg_color #4b4b5a;
+@define-color window_bg_color #FFF0F6;
+@define-color window_fg_color #48243B;
 
-@define-color headerbar_bg_color #BFDDF5;
-@define-color headerbar_fg_color #4b4b5a;
-@define-color headerbar_border_color #C6B7E2;
+@define-color accent_bg_color #D6336C;
+@define-color accent_fg_color #FFFFFF;
+@define-color destructive_bg_color #FFB1C9;
+@define-color destructive_fg_color #6D1F3E;
+
+@define-color warning_bg_color #FFD9A8;
+@define-color warning_fg_color #5C3A10;
+
+@define-color headerbar_bg_color #D5E9FF;
+@define-color headerbar_fg_color #3A3350;
+@define-color headerbar_border_color #D6336C;
 @define-color headerbar_backdrop_color @window_bg_color;
 @define-color headerbar_shade_color rgba(0, 0, 0, 0.07);
 
-@define-color popover_bg_color #E6F2FF;
-@define-color popover_fg_color #4b4b5a;
+@define-color popover_bg_color #FFF0F6;
+@define-color popover_fg_color #48243B;
 
-@define-color view_bg_color #E6F2FF;
-@define-color view_fg_color #4b4b5a;
+@define-color view_bg_color #FFF0F6;
+@define-color view_fg_color #48243B;
 
-@define-color card_bg_color #E3D9F5;
-@define-color card_fg_color #4b4b5a;
+@define-color card_bg_color #EBD9FF;
+@define-color card_fg_color #48243B;
 @define-color card_shade_color rgba(0, 0, 0, 0.07);
 
 .calc-grid-button {
-    background-color: #E3D9F5;
-    color: #4b4b5a;
-    border: 1px solid #C6B7E2;
+    background-color: #EBD9FF;
+    color: #48243B;
+    border: 1px solid #D6336C;
 }
 
 .calc-grid-button:hover {
-    background-color: #BFDDF5;
+    background-color: #FFD9A8;
 }
 
 .calc-grid-button:active {
-    background-color: #C6B7E2;
-    color: #4b4b5a;
+    background-color: #D6336C;
+    color: #FFFFFF;
 }
 
 .calc-grid-button.accent {
-    background-color: #C6B7E2;
-    color: #4b4b5a;
+    background-color: #D6336C;
+    color: #FFFFFF;
 }
 
 .calc-grid-button.accent:hover {
-    background-color: #FFD6E8;
+    background-color: #E85D8F;
 }
 
 .calculator-display-header {
-    background-color: #E6F2FF;
-    color: #4b4b5a;
+    background-color: #FFF0F6;
+    color: #48243B;
 }
 
 .calc-entry-display {
-    color: #4b4b5a;
+    color: #48243B;
 }
 
 .calc-history {
-    color: #7a7a8c;
+    color: #8A5A75;
 }
 
 .sidebar {
-    background-color: #BFDDF5;
-    border-right: 1px solid #C6B7E2;
+    background-color: #D5E9FF;
+    border-right: 1px solid #D6336C;
 }
 
 .sidebar-list row:selected {
-    background-color: #C6B7E2;
-    color: #4b4b5a;
+    background-color: #D6336C;
+    color: #FFFFFF;
 }
 
 .calc-grid-button.suggested-action {

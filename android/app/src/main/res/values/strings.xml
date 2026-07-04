@@ -33,6 +33,10 @@
 
     <!-- Calculator Screen -->
     <string name="calculator_select_mode">Select Mode</string>
+    <string name="mode_desc_standard">Everyday arithmetic</string>
+    <string name="mode_desc_scientific">Trigonometry, logarithms and more</string>
+    <string name="mode_desc_programming">Hex, binary and bitwise ops</string>
+    <string name="mode_desc_financial">Interest and loan calculations</string>
     <string name="calculator_sessions">Sessions</string>
     <string name="calculator_new_calculator">New Calculator</string>
     <string name="calculator_close_session">Close Session</string>
@@ -45,4 +49,5 @@
 
     <!-- Sessions -->
     <string name="session_limit_reached">Session limit reached — close a session to create a new one</string>
+    <string name="session_count">%1$d open</string>
 </resources>
