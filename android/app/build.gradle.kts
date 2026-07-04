@@ -5,8 +5,9 @@ plugins {
 
 android {
     namespace = "com.neocalc.app"
-    compileSdk = 36
-    buildToolsVersion = "36.0.0"
+    // androidx.core 1.19 / lifecycle 2.11 require compileSdk >= 37.
+    // Build-tools version is left to AGP's default.
+    compileSdk = 37
     ndkVersion = "29.0.14206865"
 
     defaultConfig {
