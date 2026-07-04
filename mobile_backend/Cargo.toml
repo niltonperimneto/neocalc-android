@@ -10,7 +10,6 @@ name = "neocalc_backend"
 [dependencies]
 uniffi = { version = "0.32.0", features = ["cli"] }
 neocalc-core = { path = "../backend" }
-num-traits = "0.2"
 
 # Update module dependencies
 reqwest = { version = "0.13", features = ["rustls", "webpki-roots", "blocking", "json"], default-features = false }
