@@ -8,17 +8,17 @@ crate-type = ["cdylib"]
 name = "neocalc_backend"
 
 [dependencies]
-uniffi = { version = "0.30.0", features = ["cli"] }
+uniffi = { version = "0.32.0", features = ["cli"] }
 neocalc-core = { path = "../backend" }
 num-traits = "0.2"
 
 # Update module dependencies
-reqwest = { version = "0.12", features = ["rustls-tls", "blocking", "json"], default-features = false }
-sha2 = "0.10"
+reqwest = { version = "0.13", features = ["rustls", "webpki-roots", "blocking", "json"], default-features = false }
+sha2 = "0.11"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 minisign-verify = "0.2"
 semver = "1.0"
 
 [build-dependencies]
-uniffi = { version = "0.30.0", features = ["build"] }
+uniffi = { version = "0.32.0", features = ["build"] }

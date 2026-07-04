@@ -43,9 +43,9 @@ fun AboutDialog(
     
     // Logo Loader
     val imageLoader = androidx.compose.runtime.remember(context) {
-        coil.ImageLoader.Builder(context)
+        coil3.ImageLoader.Builder(context)
             .components {
-                add(coil.decode.SvgDecoder.Factory())
+                add(coil3.svg.SvgDecoder.Factory())
             }
             .build()
     }
@@ -56,7 +56,7 @@ fun AboutDialog(
         textContentColor = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
         onDismissRequest = onDismissRequest,
         icon = {
-             coil.compose.AsyncImage(
+             coil3.compose.AsyncImage(
                 model = "file:///android_asset/logo.svg",
                 contentDescription = "NeoCalc Logo",
                 imageLoader = imageLoader,

@@ -374,7 +374,7 @@ fn calculate_sha256(path: &str) -> Result<String, String> {
     }
 
     let result = hasher.finalize();
-    Ok(format!("{:x}", result))
+    Ok(result.iter().map(|b| format!("{:02x}", b)).collect())
 }
 
 #[cfg(test)]
