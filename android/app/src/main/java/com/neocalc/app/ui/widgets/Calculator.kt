@@ -37,8 +37,11 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import android.widget.Toast
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.neocalc.app.R
@@ -63,7 +66,16 @@ fun Calculator(
     viewModel: CalculatorViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    
+
+    // One-shot warnings from the backend (load recovery, session limit, ...)
+    val toastContext = LocalContext.current
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let { message ->
+            Toast.makeText(toastContext, message, Toast.LENGTH_LONG).show()
+            viewModel.clearError()
+        }
+    }
+
     var showAbout by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
 
@@ -108,20 +120,29 @@ fun Calculator(
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             topBar = {
+                // Blends into the display panel so the top reads as one surface.
                 TopAppBar(
                     title = { },
                     navigationIcon = {
                         IconButton(onClick = { showSettings = true }) {
-                            Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.content_desc_settings))
+                            Icon(
+                                Icons.Filled.Settings,
+                                contentDescription = stringResource(R.string.content_desc_settings),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     },
                     actions = {
                         IconButton(onClick = { showAbout = true }) {
-                            Icon(Icons.Filled.Info, contentDescription = stringResource(R.string.content_desc_about))
+                            Icon(
+                                Icons.Filled.Info,
+                                contentDescription = stringResource(R.string.content_desc_about),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                     )
                 )
             }
@@ -177,9 +198,6 @@ fun Calculator(
                     }
                 }
 
-                // Convert HistoryItem to strings for backward-compatible Display
-                val historyStrings = uiState.history.map { "${it.expression} = ${it.result}" }
-
                 if (isLandscape) {
                     Row(modifier = Modifier.fillMaxSize()) {
                         Display(
@@ -187,12 +205,13 @@ fun Calculator(
                             currentMode = uiState.currentMode,
                             onModeClick = { showModeSheet = true },
                             history = uiState.history,
-                            onHistoryItemClick = { viewModel.insertHistoryItem("${it.expression} = ${it.result}") },
+                            onHistoryRestore = viewModel::restoreHistoryEntry,
+                            onHistoryInsertResult = viewModel::insertHistoryResult,
                             modifier = Modifier
                                 .weight(LayoutWeights.displayLandscape)
                                 .fillMaxSize()
                         )
-                        
+
                         gridContent(Modifier.weight(LayoutWeights.gridLandscape))
                     }
                 } else {
@@ -202,10 +221,11 @@ fun Calculator(
                             currentMode = uiState.currentMode,
                             onModeClick = { showModeSheet = true },
                             history = uiState.history,
-                            onHistoryItemClick = { viewModel.insertHistoryItem("${it.expression} = ${it.result}") },
+                            onHistoryRestore = viewModel::restoreHistoryEntry,
+                            onHistoryInsertResult = viewModel::insertHistoryResult,
                             modifier = Modifier.weight(LayoutWeights.displayPortrait)
                         )
-                        
+
                         gridContent(Modifier.weight(LayoutWeights.gridPortrait))
                     }
                 }

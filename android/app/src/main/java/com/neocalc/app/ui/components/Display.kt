@@ -4,7 +4,16 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +28,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Icon
@@ -26,167 +37,216 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.neocalc.app.R
 import com.neocalc.app.core.CalculatorMode
+import com.neocalc.app.ui.style.DisplayCorner
 import com.neocalc.app.ui.style.Spacing
 import com.neocalc.app.ui.util.NumberFormatter
-import com.neocalc.app.R
-import androidx.compose.ui.res.stringResource
 import uniffi.neocalc_backend.HistoryItem
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun Display(
     displayText: String,
     currentMode: CalculatorMode,
     onModeClick: () -> Unit,
     history: List<HistoryItem> = emptyList(),
-    onHistoryItemClick: (HistoryItem) -> Unit = {},
+    onHistoryRestore: (HistoryItem) -> Unit = {},
+    onHistoryInsertResult: (HistoryItem) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    val copiedMessage = stringResource(R.string.history_copied)
-    
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(Spacing.md),
-    ) {
-        // Mode Indicator (Top Center)
-        Surface(
-            onClick = onModeClick,
-            shape = RoundedCornerShape(Spacing.sm + Spacing.xs),
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-            modifier = Modifier.align(Alignment.TopCenter)
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = Spacing.sm + Spacing.xs, vertical = Spacing.xs),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                     text = currentMode.title.uppercase(),
-                     style = MaterialTheme.typography.labelSmall,
-                     color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(Modifier.width(Spacing.xs))
-                Icon(
-                    imageVector = Icons.Default.ArrowDropDown,
-                    contentDescription = null,
-                    modifier = Modifier.size(Spacing.md),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
+    val panelColor = MaterialTheme.colorScheme.surfaceContainerLow
 
-        Column(
-            horizontalAlignment = Alignment.End,
+    // The display reads as one large rounded panel above the keypad.
+    Surface(
+        color = panelColor,
+        shape = RoundedCornerShape(bottomStart = DisplayCorner, bottomEnd = DisplayCorner),
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .align(Alignment.BottomEnd)
-                .padding(top = Spacing.xl)
+                .padding(Spacing.md),
         ) {
-            // History List with HistoryItem support
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(Spacing.xs),
-                contentPadding = PaddingValues(bottom = Spacing.sm)
+            // Mode Indicator (Top Center)
+            Surface(
+                onClick = onModeClick,
+                shape = RoundedCornerShape(50),
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                modifier = Modifier.align(Alignment.TopCenter)
             ) {
-                 items(history) { item ->
-                     val displayString = "${item.expression} = ${item.result}"
-                     // Use error color for error items, high contrast for normal items
-                     val textColor = if (item.isError) {
-                         MaterialTheme.colorScheme.error
-                     } else {
-                         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
-                     }
-                     
-                     Surface(
-                         shape = RoundedCornerShape(Spacing.xs),
-                         color = MaterialTheme.colorScheme.surface,
-                         modifier = Modifier
-                             .fillMaxWidth()
-                             .combinedClickable(
-                                 onClick = { onHistoryItemClick(item) },
-                                 onLongClick = {
-                                     // Copy to clipboard
-                                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                     val clip = ClipData.newPlainText("History", displayString)
-                                     clipboard.setPrimaryClip(clip)
-                                     Toast.makeText(context, copiedMessage, Toast.LENGTH_SHORT).show()
-                                 }
-                             )
-                     ) {
-                         Text(
-                            text = displayString,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = textColor,
-                            textAlign = TextAlign.End,
-                            modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.xs)
-                         )
-                     }
-                 }
+                Row(
+                    modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.xs + 2.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = currentMode.title,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    Spacer(Modifier.width(Spacing.xs))
+                    Icon(
+                        imageVector = Icons.Default.ArrowDropDown,
+                        contentDescription = null,
+                        modifier = Modifier.size(Spacing.md),
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
             }
-            
-            val formattedText = androidx.compose.runtime.remember(displayText) {
-                NumberFormatter.format(displayText)
+
+            Column(
+                horizontalAlignment = Alignment.End,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomEnd)
+                    .padding(top = Spacing.xl)
+            ) {
+                // History, fading out toward the top edge for depth
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .drawWithContent {
+                            drawContent()
+                            drawRect(
+                                brush = Brush.verticalGradient(
+                                    0f to panelColor,
+                                    0.15f to Color.Transparent
+                                )
+                            )
+                        },
+                    verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+                    contentPadding = PaddingValues(bottom = Spacing.sm, top = Spacing.md)
+                ) {
+                    items(history) { item ->
+                        HistoryRow(
+                            item = item,
+                            onRestore = { onHistoryRestore(item) },
+                            onInsertResult = { onHistoryInsertResult(item) }
+                        )
+                    }
+                }
+
+                val formattedText = remember(displayText) {
+                    NumberFormatter.format(displayText)
+                }
+
+                // Current value: auto-sizes to fit and slides in on change
+                AnimatedContent(
+                    targetState = formattedText,
+                    transitionSpec = {
+                        (slideInVertically(
+                            animationSpec = tween(220, easing = FastOutSlowInEasing)
+                        ) { it / 3 } + fadeIn(tween(220)))
+                            .togetherWith(fadeOut(tween(90)))
+                            .using(SizeTransform(clip = false))
+                    },
+                    label = "displayValue"
+                ) { value ->
+                    BasicText(
+                        text = value,
+                        autoSize = TextAutoSize.StepBased(
+                            minFontSize = 28.sp,
+                            maxFontSize = 64.sp,
+                            stepSize = 2.sp
+                        ),
+                        style = MaterialTheme.typography.displayLarge.copy(
+                            fontFamily = FontFamily.Monospace,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            textAlign = TextAlign.End
+                        ),
+                        maxLines = 1,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
-            
-            Text(
-                text = formattedText,
-                style = MaterialTheme.typography.displayMedium.copy(
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Medium
-                ),
-                textAlign = TextAlign.End,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                modifier = Modifier.fillMaxWidth()
-            )
         }
     }
 }
 
 /**
- * Legacy Display overload for backward compatibility.
- * Converts string history to HistoryItem format.
+ * A single history entry. Tapping the row reverts the calculator to that
+ * entry's expression; tapping the result inserts just the result into the
+ * current expression; long-pressing copies the whole line.
  */
-@JvmName("DisplayWithStringHistory")
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun Display(
-    displayText: String,
-    currentMode: CalculatorMode,
-    onModeClick: () -> Unit,
-    history: List<String>,
-    onHistoryItemClick: (String) -> Unit,
-    modifier: Modifier = Modifier
+private fun HistoryRow(
+    item: HistoryItem,
+    onRestore: () -> Unit,
+    onInsertResult: () -> Unit
 ) {
-    // Convert strings to HistoryItems for backward compatibility
-    val historyItems = history.map { item ->
-        val parts = item.split(" = ")
-        HistoryItem(
-            expression = parts.getOrElse(0) { item },
-            result = parts.getOrElse(1) { "" },
-            timestamp = 0u,
-            isError = false
-        )
+    val context = LocalContext.current
+    val copiedMessage = stringResource(R.string.history_copied)
+    val displayString = "${item.expression} = ${item.result}"
+
+    val resultColor = if (item.isError) {
+        MaterialTheme.colorScheme.error
+    } else {
+        MaterialTheme.colorScheme.primary
     }
-    
-    Display(
-        displayText = displayText,
-        currentMode = currentMode,
-        onModeClick = onModeClick,
-        history = historyItems,
-        onHistoryItemClick = { historyItem -> 
-            onHistoryItemClick("${historyItem.expression} = ${historyItem.result}")
-        },
-        modifier = modifier
-    )
+
+    Surface(
+        shape = RoundedCornerShape(Spacing.sm),
+        color = Color.Transparent,
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = onRestore,
+                onLongClick = {
+                    val clipboard =
+                        context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    clipboard.setPrimaryClip(ClipData.newPlainText("History", displayString))
+                    Toast.makeText(context, copiedMessage, Toast.LENGTH_SHORT).show()
+                }
+            )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = Spacing.xs, horizontal = Spacing.xs),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = item.expression,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.End,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
+            )
+            Text(
+                text = " = ",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = item.result,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = resultColor,
+                maxLines = 1,
+                modifier = Modifier
+                    .then(
+                        if (item.isError) Modifier
+                        else Modifier.clickable(onClick = onInsertResult)
+                    )
+            )
+        }
+    }
 }

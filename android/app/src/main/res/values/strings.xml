@@ -6,6 +6,10 @@
     <string name="settings_section_general">General</string>
     <string name="settings_show_fractions">Show Fractions</string>
     <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_dark_system">System</string>
+    <string name="settings_dark_light">Light</string>
+    <string name="settings_dark_dark">Dark</string>
+    <string name="settings_theme_dynamic">Dynamic (Material You)</string>
     <string name="settings_import_theme">Import Theme</string>
     <string name="settings_section_help">Help</string>
     <string name="settings_help_tutorial">Help &amp; Tutorial</string>
@@ -20,7 +24,7 @@
     <string name="tutorial_section_gestures">Gestures</string>
     <string name="tutorial_gestures_content">• Swipe Left/Right on the keypad to switch between modes.\n• Tap the mode chip at the top to open the mode picker.</string>
     <string name="tutorial_section_history">History</string>
-    <string name="tutorial_history_content">• Tap a history entry to insert its result into the input.\n• Long-press a history entry to copy it to the clipboard.</string>
+    <string name="tutorial_history_content">• Tap a history entry to bring its expression back for editing.\n• Tap just the result of an entry to insert it into the input.\n• Long-press a history entry to copy it to the clipboard.</string>
     <string name="tutorial_section_sessions">Sessions</string>
     <string name="tutorial_sessions_content">Manage multiple independent calculator sessions via the drawer (swipe from left edge or tap the drawer icon).</string>
     <string name="tutorial_section_themes">Themes</string>
@@ -38,4 +42,7 @@
 
     <!-- History -->
     <string name="history_copied">Copied!</string>
+
+    <!-- Sessions -->
+    <string name="session_limit_reached">Session limit reached — close a session to create a new one</string>
 </resources>

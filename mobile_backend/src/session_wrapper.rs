@@ -53,8 +53,34 @@ impl MobileSessionManager {
             .collect()
     }
 
-    pub fn create_session(&self) -> String {
+    /// Returns the new session id, or None when the core's session limit is reached.
+    pub fn create_session(&self) -> Option<String> {
         self.inner.create_session()
+    }
+
+    /// Replace the input buffer with a history entry's expression, reverting
+    /// the calculator to that earlier state so it can be edited/re-evaluated.
+    pub fn restore_expression(&self, expression: String) -> String {
+        self.inner.clear();
+        self.inner.input(expression)
+    }
+
+    /// Synchronously persist all sessions to disk. Returns an error message on
+    /// failure, or None on success. Call from lifecycle hooks (e.g. onStop) on
+    /// a background thread — this blocks on the write.
+    pub fn flush(&self) -> Option<String> {
+        self.inner.flush().err().map(|e| e.to_string())
+    }
+
+    /// Warning recorded while loading persisted state (e.g. corruption that was
+    /// recovered from a backup), if any.
+    pub fn load_warning(&self) -> Option<String> {
+        self.inner.load_warning()
+    }
+
+    /// Error message from the most recent background persistence attempt, if any.
+    pub fn last_persist_error(&self) -> Option<String> {
+        self.inner.last_persist_error()
     }
 
     pub fn switch_session(&self, id: String) -> bool {

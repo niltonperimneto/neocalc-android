@@ -3,21 +3,29 @@ package com.neocalc.app.ui.style
 import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import com.neocalc.app.ui.theme.ThemeManager
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
+import com.neocalc.app.core.AppPreferences
+import com.neocalc.app.ui.theme.ThemeManager
 
 private val DarkColorScheme = darkColorScheme(
     primary = Color(0xFFD0BCFF),
@@ -30,6 +38,35 @@ private val DarkColorScheme = darkColorScheme(
     onTertiary = Color(0xFF492532),
     onBackground = Color(0xFFE6E1E5),
     onSurface = Color(0xFFE6E1E5),
+)
+
+/** Type scale tuned for a calculator: big confident numerals, roomy labels. */
+private val NeoCalcTypography = Typography().let { base ->
+    base.copy(
+        displayLarge = base.displayLarge.copy(
+            fontSize = 64.sp,
+            lineHeight = 72.sp,
+            fontWeight = FontWeight.Medium,
+            letterSpacing = (-0.25).sp
+        ),
+        displayMedium = base.displayMedium.copy(
+            fontWeight = FontWeight.Medium
+        ),
+        headlineSmall = base.headlineSmall.copy(
+            fontWeight = FontWeight.Medium
+        ),
+        titleMedium = base.titleMedium.copy(
+            fontWeight = FontWeight.Medium
+        )
+    )
+}
+
+private val NeoCalcShapes = Shapes(
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(24.dp),
+    extraLarge = RoundedCornerShape(28.dp)
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -47,51 +84,54 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun NeoCalcTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
     val currentThemeInfo by ThemeManager.currentTheme.collectAsState()
+    val dynamicSelected by ThemeManager.dynamicSelected.collectAsState()
+    val darkModePref by ThemeManager.darkMode.collectAsState()
 
-    // Automatic Switch between material (dark) and material-light (light)
-    androidx.compose.runtime.LaunchedEffect(darkTheme, currentThemeInfo) {
-        val themeName = currentThemeInfo?.name
-        if (themeName == "material" && !darkTheme) {
-            ThemeManager.loadTheme(context, "material-light")
-        } else if (themeName == "material-light" && darkTheme) {
-            ThemeManager.loadTheme(context, "material")
-        }
+    val darkTheme = when (darkModePref) {
+        AppPreferences.DarkMode.LIGHT -> false
+        AppPreferences.DarkMode.DARK -> true
+        AppPreferences.DarkMode.SYSTEM -> isSystemInDarkTheme()
+    }
+
+    // Follow the dark-mode preference for themes with a light/dark counterpart
+    // (e.g. material <-> material-light, catppuccin-mocha stays as-is).
+    LaunchedEffect(darkTheme, currentThemeInfo?.name) {
+        ThemeManager.applyDarkPreference(context, darkTheme)
     }
 
     val colorScheme = when {
-        // 1. Custom Theme Selected
+        // 1. Custom CSS theme selected
         currentThemeInfo != null -> currentThemeInfo!!.colorScheme
-        
-        // 2. Dynamic Colors (Android 12+) if enabled and no custom theme
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+
+        // 2. Material You dynamic color, when selected and available
+        dynamicSelected && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        
-        // 3. Fallback
+
+        // 3. Fallback (also covers "dynamic" chosen on pre-Android-12 devices)
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
-    
+
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            // Modern edge-to-edge: status bar color is handled by system/transparent
-            // We just control the icons:
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            // Status-bar icon contrast follows the actual rendered background,
+            // which for CSS themes may not match the dark-mode preference.
+            val lightBackground = colorScheme.background.luminance() > 0.5f
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars =
+                lightBackground
         }
     }
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = MaterialTheme.typography, // Use default M3 typography
+        typography = NeoCalcTypography,
+        shapes = NeoCalcShapes,
         content = content
     )
 }

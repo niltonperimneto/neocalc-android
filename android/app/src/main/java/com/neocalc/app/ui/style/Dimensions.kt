@@ -14,10 +14,25 @@ object Spacing {
     val xl = 32.dp  // Extra large
     
     // Specific use cases
-    val buttonGap = 2.dp
+    val buttonGap = 4.dp
     val contentPadding = 16.dp
     val sectionGap = 24.dp
 }
+
+/**
+ * Calculator key geometry. Keys rest as pills and morph toward a rounded
+ * square while pressed (Material 3 expressive style).
+ */
+object KeyStyle {
+    val cornerRest = 40.dp
+    val cornerPressed = 18.dp
+
+    /** Width:height of portrait keys; lower = taller keys. */
+    const val aspect = 1.2f
+}
+
+/** Corner radius of the display panel above the keypad. */
+val DisplayCorner = 28.dp
 
 /**
  * Layout weight constants for consistent proportions.
