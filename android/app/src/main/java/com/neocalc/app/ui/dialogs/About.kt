@@ -97,7 +97,8 @@ fun AboutDialog(
                         is com.neocalc.app.utils.UpdateStatus.Idle -> "Check for updates"
                         is com.neocalc.app.utils.UpdateStatus.Loading -> "Checking..."
                         is com.neocalc.app.utils.UpdateStatus.Available -> "Tap to download ${s.version}"
-                        is com.neocalc.app.utils.UpdateStatus.Downloading -> "Downloading... ${s.progress}%"
+                        is com.neocalc.app.utils.UpdateStatus.Downloading ->
+                            if (s.progress < 0) "Downloading..." else "Downloading... ${s.progress}%"
                         is com.neocalc.app.utils.UpdateStatus.Downloaded -> "Tap to install ${s.version}"
                         is com.neocalc.app.utils.UpdateStatus.UpToDate -> "Up to date"
                         is com.neocalc.app.utils.UpdateStatus.Error -> s.message
@@ -116,14 +117,17 @@ fun AboutDialog(
                              is com.neocalc.app.utils.UpdateStatus.Available -> {
                                  // Start download
                                  scope.launch {
-                                     updateStatus = com.neocalc.app.utils.UpdateStatus.Downloading(0, s.version)
+                                     updateStatus = com.neocalc.app.utils.UpdateStatus.Downloading(-1, s.version)
                                      updateStatus = com.neocalc.app.utils.UpdateManager.downloadApk(
                                          context = context,
                                          downloadUrl = s.downloadUrl,
                                          version = s.version,
                                          expectedChecksum = s.checksum,
                                          onProgress = { progress ->
-                                             updateStatus = com.neocalc.app.utils.UpdateStatus.Downloading(progress, s.version)
+                                             // Late-posted callbacks must not overwrite the final status
+                                             if (updateStatus is com.neocalc.app.utils.UpdateStatus.Downloading) {
+                                                 updateStatus = com.neocalc.app.utils.UpdateStatus.Downloading(progress, s.version)
+                                             }
                                          }
                                      )
                                  }

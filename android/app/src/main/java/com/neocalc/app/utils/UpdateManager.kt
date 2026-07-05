@@ -3,13 +3,18 @@ package com.neocalc.app.utils
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import uniffi.neocalc_backend.UpdateCheckResult
 import uniffi.neocalc_backend.DownloadResult
+import uniffi.neocalc_backend.UpdateProgressListener
 import uniffi.neocalc_backend.checkForUpdates as rustCheckForUpdates
 import uniffi.neocalc_backend.downloadApk as rustDownloadApk
 
@@ -22,11 +27,12 @@ sealed class UpdateStatus {
     object Loading : UpdateStatus()
     object UpToDate : UpdateStatus()
     data class Available(
-        val version: String, 
+        val version: String,
         val downloadUrl: String,
-        val checksum: String?,
+        val checksum: String,
         val releaseNotes: String = ""
     ) : UpdateStatus()
+    /** [progress] is 0-100, or -1 when the total size is unknown. */
     data class Downloading(val progress: Int, val version: String) : UpdateStatus()
     data class Downloaded(val apkFile: File, val version: String) : UpdateStatus()
     data class Error(val message: String) : UpdateStatus()
@@ -35,21 +41,29 @@ sealed class UpdateStatus {
 
 /**
  * Update manager that delegates to Rust backend for network operations.
- * The actual HTTP requests and SHA-256 verification happen in Rust.
+ * HTTP transport, signature/checksum verification, retries, and download
+ * resume all happen in Rust; this layer adds coroutine dispatch, progress
+ * mapping, and local file management.
  */
 object UpdateManager {
     private const val TAG = "UpdateManager"
+
+    /** Refuse to start a download with less free space than this. */
+    private const val MIN_FREE_SPACE_BYTES = 64L * 1024 * 1024
+
+    /** Serializes update operations so taps can't start concurrent checks/downloads. */
+    private val updateMutex = Mutex()
 
     /**
      * Check for updates using Rust backend.
      * Automatically detects device ABI for architecture-specific APK downloads.
      */
-    suspend fun checkForUpdates(currentVersion: String): UpdateStatus {
-        return withContext(Dispatchers.IO) {
+    suspend fun checkForUpdates(currentVersion: String): UpdateStatus = updateMutex.withLock {
+        withContext(Dispatchers.IO) {
             try {
                 // Get primary device ABI for architecture-specific APK selection
                 val deviceAbi = android.os.Build.SUPPORTED_ABIS.firstOrNull() ?: ""
-                
+
                 when (val result = rustCheckForUpdates(currentVersion, deviceAbi)) {
                     is UpdateCheckResult.Available -> {
                         Log.d(TAG, "Update available: ${result.version} (ABI: $deviceAbi)")
@@ -77,42 +91,73 @@ object UpdateManager {
     }
 
     /**
-     * Download APK using Rust backend with checksum verification.
-     * Progress reporting is not available with the current blocking Rust implementation.
+     * Download APK using Rust backend with mandatory checksum verification.
+     * Interrupted downloads are resumed on retry; progress is reported from
+     * the Rust download loop.
      */
     suspend fun downloadApk(
         context: Context,
         downloadUrl: String,
         version: String,
-        expectedChecksum: String?,
+        expectedChecksum: String,
         onProgress: (Int) -> Unit
-    ): UpdateStatus {
-        return withContext(Dispatchers.IO) {
+    ): UpdateStatus = updateMutex.withLock {
+        withContext(Dispatchers.IO) {
             try {
-                // Prepare output directory
                 val updatesDir = File(context.cacheDir, "updates")
-                if (!updatesDir.exists()) {
-                    updatesDir.mkdirs()
+                updatesDir.mkdirs()
+                // The version string comes from remote release metadata;
+                // sanitize it so it can't inject path separators.
+                val safeVersion = version.replace(Regex("[^A-Za-z0-9._-]"), "_")
+                val outputFile = File(updatesDir, "neocalc-$safeVersion.apk")
+                val partName = "${outputFile.name}.part"
+
+                // A file that made it to its final name already passed
+                // checksum verification; don't download it again.
+                if (outputFile.isFile && outputFile.length() > 0) {
+                    Log.d(TAG, "Reusing verified download: ${outputFile.path}")
+                    return@withContext UpdateStatus.Downloaded(outputFile, version)
                 }
 
-                // Clean old APKs
-                updatesDir.listFiles()?.forEach { it.delete() }
-
-                val outputPath = File(updatesDir, "neocalc-$version.apk").absolutePath
-                
-                // Notify UI that download is starting (progress will be indeterminate)
-                withContext(Dispatchers.Main) {
-                    onProgress(0)
+                // Clean stale files from other versions, but keep this
+                // version's partial download so Rust can resume it.
+                updatesDir.listFiles()?.forEach { file ->
+                    if (file.name != outputFile.name && file.name != partName) {
+                        file.delete()
+                    }
                 }
 
-                Log.d(TAG, "Starting download: $downloadUrl -> $outputPath")
-                
-                when (val result = rustDownloadApk(downloadUrl, outputPath, expectedChecksum)) {
+                if (updatesDir.usableSpace < MIN_FREE_SPACE_BYTES) {
+                    return@withContext UpdateStatus.Error("Not enough free space to download the update")
+                }
+
+                val mainHandler = Handler(Looper.getMainLooper())
+                val listener = object : UpdateProgressListener {
+                    // Called from the Rust download thread.
+                    private var lastPercent = Int.MIN_VALUE
+                    override fun onProgress(bytesDownloaded: ULong, totalBytes: ULong?) {
+                        val percent = if (totalBytes != null && totalBytes > 0uL) {
+                            (bytesDownloaded * 100uL / totalBytes).toInt().coerceIn(0, 100)
+                        } else {
+                            -1 // indeterminate
+                        }
+                        if (percent != lastPercent) {
+                            lastPercent = percent
+                            mainHandler.post { onProgress(percent) }
+                        }
+                    }
+                }
+
+                Log.d(TAG, "Starting download: $downloadUrl -> ${outputFile.path}")
+
+                when (val result = rustDownloadApk(
+                    downloadUrl,
+                    outputFile.absolutePath,
+                    expectedChecksum,
+                    listener
+                )) {
                     is DownloadResult.Success -> {
                         Log.d(TAG, "Download complete: ${result.filePath}")
-                        withContext(Dispatchers.Main) {
-                            onProgress(100)
-                        }
                         UpdateStatus.Downloaded(File(result.filePath), version)
                     }
                     is DownloadResult.ChecksumFailed -> {

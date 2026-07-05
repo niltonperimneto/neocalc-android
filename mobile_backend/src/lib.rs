@@ -1,7 +1,9 @@
 uniffi::setup_scaffolding!();
 
 mod update;
-pub use update::{check_for_updates, download_apk, DownloadResult, UpdateCheckResult};
+pub use update::{
+    check_for_updates, download_apk, DownloadResult, UpdateCheckResult, UpdateProgressListener,
+};
 
 mod formatting;
 pub use formatting::{format_for_display, NumberLocale};

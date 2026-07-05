@@ -12,7 +12,9 @@ uniffi = { version = "0.32.0", features = ["cli"] }
 neocalc-core = { path = "../backend" }
 
 # Update module dependencies
-reqwest = { version = "0.13.4", features = ["rustls", "blocking", "json"], default-features = false }
+# ureq is a purely blocking HTTP client: no tokio "event loop" thread to
+# panic, rustls with a pinned crypto provider, and bundled webpki roots.
+ureq = "3.3"
 sha2 = "0.11.0"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.150"
