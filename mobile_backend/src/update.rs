@@ -234,6 +234,7 @@ fn get_validated(
         return Ok(response);
     }
     Err("Too many redirects".to_string())
+}
 
 /// GET a small resource as text, with retries for transient failures and a
 /// hard size limit.
