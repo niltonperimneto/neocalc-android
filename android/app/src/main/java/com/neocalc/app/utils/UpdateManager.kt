@@ -106,7 +106,10 @@ object UpdateManager {
             try {
                 val updatesDir = File(context.cacheDir, "updates")
                 updatesDir.mkdirs()
-                val outputFile = File(updatesDir, "neocalc-$version.apk")
+                // The version string comes from remote release metadata;
+                // sanitize it so it can't inject path separators.
+                val safeVersion = version.replace(Regex("[^A-Za-z0-9._-]"), "_")
+                val outputFile = File(updatesDir, "neocalc-$safeVersion.apk")
                 val partName = "${outputFile.name}.part"
 
                 // A file that made it to its final name already passed

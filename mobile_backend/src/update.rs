@@ -83,7 +83,9 @@ pub enum DownloadResult {
 }
 
 /// Progress callback implemented on the Kotlin side.
-/// `total_bytes` is `None` when the server did not report a size.
+/// `total_bytes` is `None` when the server did not report a size, except in
+/// the final callback of a completed download, where the total is known to
+/// equal `bytes_downloaded` and is reported as such (so UIs can land on 100%).
 #[uniffi::export(with_foreign)]
 pub trait UpdateProgressListener: Send + Sync {
     fn on_progress(&self, bytes_downloaded: u64, total_bytes: Option<u64>);
@@ -248,16 +250,22 @@ fn get_text_with_retry(
             Ok(mut response) => {
                 let status = response.status();
                 if status.is_success() {
-                    return response
+                    // A mid-body failure (connection reset while streaming)
+                    // is transient too: fall through to the next attempt.
+                    match response
                         .body_mut()
                         .with_config()
                         .limit(max_bytes)
                         .read_to_string()
-                        .map_err(|e| format!("Failed to read response: {e}"));
-                }
-                last_error = format!("Server returned HTTP {status} for {url}");
-                if !is_transient_status(status.as_u16()) {
-                    return Err(last_error);
+                    {
+                        Ok(text) => return Ok(text),
+                        Err(e) => last_error = format!("Failed to read response: {e}"),
+                    }
+                } else {
+                    last_error = format!("Server returned HTTP {status} for {url}");
+                    if !is_transient_status(status.as_u16()) {
+                        return Err(last_error);
+                    }
                 }
             }
             Err(e) => last_error = e,
