@@ -25,7 +25,7 @@ jobs:
     outputs:
       new_tag: ${{ steps.tag_step.outputs.new_tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           submodules: recursive
@@ -67,7 +67,7 @@ jobs:
       always() && 
       (needs.create_tag.result == 'success' || (needs.create_tag.result == 'skipped' && startsWith(github.ref, 'refs/tags/v')))
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           submodules: recursive
@@ -149,7 +149,7 @@ jobs:
           rm minisign.key
           
       - name: Release and Upload
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.define_version.outputs.version }}
           name: Release ${{ steps.define_version.outputs.version }}
