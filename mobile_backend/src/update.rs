@@ -466,14 +466,22 @@ fn verify_and_fetch_checksums(
     Ok(signed_content)
 }
 
-/// Parse checksum from verified content
+fn is_valid_sha256_hex(hash: &str) -> bool {
+    hash.len() == 64 && hash.chars().all(|c| c.is_ascii_hexdigit())
+}
+
+/// Parse checksum from verified content. Accepts the exact filename or a
+/// path-prefixed variant ("release/<name>"); only well-formed SHA-256
+/// values are returned.
 fn parse_checksum(content: &str, target_filename: &str) -> Option<String> {
     for line in content.lines() {
         let parts: Vec<&str> = line.splitn(2, char::is_whitespace).collect();
         if parts.len() == 2 {
             let hash = parts[0].to_lowercase();
             let filename = parts[1].trim().trim_start_matches('*');
-            if filename == target_filename || filename.ends_with(target_filename) {
+            let matches = filename == target_filename
+                || filename.ends_with(&format!("/{target_filename}"));
+            if matches && is_valid_sha256_hex(&hash) {
                 return Some(hash);
             }
         }
@@ -520,7 +528,7 @@ fn download_apk_inner(
     if let Err(message) = validate_url(download_url) {
         return DownloadResult::Error { message };
     }
-    if expected_checksum.len() != 64 || !expected_checksum.chars().all(|c| c.is_ascii_hexdigit()) {
+    if !is_valid_sha256_hex(expected_checksum) {
         return DownloadResult::Error {
             message: "Invalid expected checksum (must be 64 hex chars)".to_string(),
         };
@@ -797,18 +805,40 @@ mod tests {
 
     #[test]
     fn test_parse_checksum() {
-        let content = "abc123  app-arm64-v8a-release.apk\n\
-                       def456  app-universal-release.apk\n\
-                       DEADBEEF *app-release.apk\n";
-        assert_eq!(
-            parse_checksum(content, "app-arm64-v8a-release.apk"),
-            Some("abc123".to_string())
+        let hash_a = "a".repeat(64);
+        let hash_b = "B".repeat(64);
+        let hash_c = "c".repeat(64);
+        let content = format!(
+            "{hash_a}  app-arm64-v8a-release.apk\n\
+             {hash_b} *app-release.apk\n\
+             {hash_c}  release/app-x86-release.apk\n"
         );
         assert_eq!(
-            parse_checksum(content, "app-release.apk"),
-            Some("deadbeef".to_string())
+            parse_checksum(&content, "app-arm64-v8a-release.apk"),
+            Some(hash_a)
         );
-        assert_eq!(parse_checksum(content, "missing.apk"), None);
+        // '*' binary-mode marker and uppercase hash are normalized
+        assert_eq!(
+            parse_checksum(&content, "app-release.apk"),
+            Some(hash_b.to_lowercase())
+        );
+        // Path prefix is accepted only at a '/' boundary
+        assert_eq!(
+            parse_checksum(&content, "app-x86-release.apk"),
+            Some(hash_c)
+        );
+        assert_eq!(parse_checksum(&content, "x86-release.apk"), None);
+        assert_eq!(parse_checksum(&content, "missing.apk"), None);
+    }
+
+    #[test]
+    fn test_parse_checksum_rejects_malformed_hash() {
+        // Signature-verified or not, a manifest entry that isn't a
+        // well-formed SHA-256 must not cross the FFI boundary.
+        let content = "abc123  app-release.apk\n";
+        assert_eq!(parse_checksum(content, "app-release.apk"), None);
+        let content = format!("{}  app-release.apk\n", "g".repeat(64));
+        assert_eq!(parse_checksum(&content, "app-release.apk"), None);
     }
 
     /// Asset names and ordering taken from the real v2026.07-6 release.
