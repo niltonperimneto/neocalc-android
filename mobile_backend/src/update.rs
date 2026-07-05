@@ -209,7 +209,7 @@ fn get_validated(
     extra_headers: &[(&str, &str)],
 ) -> Result<ureq::http::Response<ureq::Body>, String> {
     let mut current = url.to_string();
-    for _ in 0..=MAX_REDIRECTS {
+    for redirects in 0..=MAX_REDIRECTS {
         let uri = validate_url(&current)?;
         let mut request = agent.get(&current);
         for (name, value) in extra_headers {
@@ -220,6 +220,9 @@ fn get_validated(
         }
         let response = request.call().map_err(|e| format!("Network error: {e}"))?;
         if response.status().is_redirection() {
+            if redirects == MAX_REDIRECTS {
+                return Err("Too many redirects".to_string());
+            }
             let location = response
                 .headers()
                 .get("location")
@@ -231,7 +234,6 @@ fn get_validated(
         return Ok(response);
     }
     Err("Too many redirects".to_string())
-}
 
 /// GET a small resource as text, with retries for transient failures and a
 /// hard size limit.
