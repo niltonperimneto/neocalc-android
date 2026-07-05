@@ -243,6 +243,8 @@ fn get_text_with_retry(
     max_bytes: u64,
     extra_headers: &[(&str, &str)],
 ) -> Result<String, String> {
+    // Fail fast on non-HTTPS or untrusted hosts instead of retrying with backoff.
+    let _ = validate_url(url)?;
     let mut last_error = String::new();
     for attempt in 0..MAX_ATTEMPTS {
         if attempt > 0 {
